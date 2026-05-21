@@ -8,22 +8,34 @@ allowed-tools: Read, Bash
 
 1. `.claude/issue_config.json` 읽기 (reviewer 목록)
 2. `git branch --show-current` → 브랜치명 파싱 (prefix/domain/desc)
-3. 커밋 확인: `git log upstream/dev..HEAD --oneline`
+3. **사전 점검 — .gitkeep 잔존 여부 확인**:
+   ```bash
+   for f in $(find . -name ".gitkeep" -not -path "./.git/*"); do
+     dir=$(dirname "$f")
+     count=$(find "$dir" -maxdepth 1 -name "*.java" | wc -l | tr -d ' ')
+     if [ "$count" -gt 0 ]; then echo "NEEDS REMOVAL: $f"; fi
+   done
+   ```
+   - 결과 없음 → 다음 단계 진행
+   - 결과 있음 → 해당 파일 목록을 사용자에게 보여주고, 자동 삭제 후 커밋할지 확인
+     - 승인 시: `rm {파일}` → `git add -u` → `git commit -m "chore: .gitkeep 제거"` → 계속 진행
+     - 거부 시: 중단 (사용자가 직접 처리 후 재실행)
+4. 커밋 확인: `git log upstream/dev..HEAD --oneline`
    - 커밋 있음 → 5번으로
    - **커밋 없음 → 미커밋 변경사항 탐색**:
      - `git status --short` + `git diff HEAD --stat` 출력
      - 커밋할 파일 목록을 사용자에게 보여주고 선택 요청
      - 선택된 파일 `git add (-f 포함)` → 커밋 메시지 제안 후 `git commit` → `git push origin {브랜치명}`
-4. **이슈 번호 확인**:
+5. **이슈 번호 확인**:
    - `.claude/issue_log.json`에서 현재 브랜치명과 일치하는 항목의 `github_number` 조회
    - 로그에 있으면 자동 사용, 없으면 사용자에게 직접 입력 요청 (milestones.md 순번 아님, `gh issue list`로 확인 가능)
-5. 브랜치 prefix 기반 type label 결정, domain label 추론 (불확실하면 사용자 확인)
-6. `.github/pull_request_template.md` 읽기 → 본문 기반으로 body 작성:
+6. 브랜치 prefix 기반 type label 결정, domain label 추론 (불확실하면 사용자 확인)
+7. `.github/pull_request_template.md` 읽기 → 본문 기반으로 body 작성:
    - 체크박스 항목은 해당하는 것만 `[x]`로 체크, **해당 없는 항목은 목록에서 완전히 제거**
    - `test(red):` / `test(green):` / `refactor:` 커밋 존재 여부로 TDD 체크박스 자동 체크
    - 리뷰 포인트: `git diff upstream/dev...HEAD --stat` 기반 1-2줄 생성
    - 스크린샷/참고 자료: 없으면 섹션 자체 제거
-7. PR 작성자를 reviewer 목록에서 제외 후:
+8. PR 작성자를 reviewer 목록에서 제외 후:
    ```
    gh pr create \
      --repo {upstream_owner}/{upstream_repo} \
@@ -36,7 +48,7 @@ allowed-tools: Read, Bash
      --label "{type_label}" \
      --label "{domain_label}"
    ```
-8. PR 생성 성공 시 `.claude/issue_log.json`에서 현재 브랜치명과 일치하는 항목 삭제
+9. PR 생성 성공 시 `.claude/issue_log.json`에서 현재 브랜치명과 일치하는 항목 삭제
 
 ## PR 제목 규칙
 
