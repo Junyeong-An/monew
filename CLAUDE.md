@@ -91,6 +91,7 @@ com.sprint.mission.monew/
 /fix-review                  # PR 리뷰 코멘트 반영
 /java-style                  # Google Java Style 준수 여부 점검
 /sync-claude                 # claude-setup 브랜치에서 최신 설정 동기화
+/remove-gitkeep              # 실제 파일이 생긴 디렉토리의 .gitkeep 제거
 ```
 
 ## Git Workflow
