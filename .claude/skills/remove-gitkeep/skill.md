@@ -6,11 +6,11 @@ allowed-tools: Bash
 
 ## 실행
 
-1. 제거 대상 탐색 — 다른 파일이 존재하는 디렉토리의 `.gitkeep`만 선택:
+1. 제거 대상 탐색 — 실제 파일(`-type f`)이 존재하는 디렉토리의 `.gitkeep`만 선택:
    ```bash
    find . -name ".gitkeep" -not -path "./.git/*" | while read f; do
      dir=$(dirname "$f")
-     count=$(find "$dir" -maxdepth 1 -not -name ".gitkeep" -not -name "." | wc -l)
+     count=$(find "$dir" -maxdepth 1 -type f -not -name ".gitkeep" | wc -l)
      [ "$count" -gt 0 ] && echo "$f"
    done
    ```
@@ -20,7 +20,7 @@ allowed-tools: Bash
    ```bash
    find . -name ".gitkeep" -not -path "./.git/*" | while read f; do
      dir=$(dirname "$f")
-     count=$(find "$dir" -maxdepth 1 -not -name ".gitkeep" -not -name "." | wc -l)
+     count=$(find "$dir" -maxdepth 1 -type f -not -name ".gitkeep" | wc -l)
      [ "$count" -gt 0 ] && rm "$f"
    done
    ```
