@@ -47,7 +47,8 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입, 관심사 등록)
     gh api graphql -f query='mutation { updateProjectV2ItemFieldValue(input: { projectId: "PVT_kwDOENwgXM4BYEXZ", itemId: "{item_id}", fieldId: "{field_id}", value: { singleSelectOptionId: "{option_id}" } }) { projectV2Item { id } } }'
     ```
     날짜 필드는 `value: { date: "YYYY-MM-DD" }` 사용
-12. `.claude/issue_log.json`에 아래 형식으로 항목 추가 (파일 없으면 생성):
+12. type label이 `adr`이면 issue_log.json 기재를 건너뛴다 (ADR은 PR 불필요).
+    그 외 타입은 `.claude/issue_log.json`에 아래 형식으로 항목 추가 (파일 없으면 생성):
     ```json
     { "milestone_seq": {milestones.md의 #번호}, "github_number": {실제 이슈 번호}, "title": "{이슈 제목}", "branch": "{생성된 브랜치명}" }
     ```
