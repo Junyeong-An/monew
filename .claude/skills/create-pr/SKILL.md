@@ -14,8 +14,9 @@ allowed-tools: Read, Bash
      - `git status --short` + `git diff HEAD --stat` 출력
      - 커밋할 파일 목록을 사용자에게 보여주고 선택 요청
      - 선택된 파일 `git add (-f 포함)` → 커밋 메시지 제안 후 `git commit` → `git push origin {브랜치명}`
-4. **사용자에게 직접 입력 요청**:
-   - 연결할 이슈 번호 (예: 7) → `Closes #N`
+4. **이슈 번호 확인**:
+   - `.claude/issue_log.json`에서 현재 브랜치명과 일치하는 항목의 `github_number` 조회
+   - 로그에 있으면 자동 사용, 없으면 사용자에게 직접 입력 요청 (milestones.md 순번 아님, `gh issue list`로 확인 가능)
 5. 브랜치 prefix 기반 type label 결정, domain label 추론 (불확실하면 사용자 확인)
 6. `.github/pull_request_template.md` 읽기 → 본문 기반으로 body 작성:
    - 체크박스 항목은 해당하는 것만 `[x]`로 체크, **해당 없는 항목은 목록에서 완전히 제거**
@@ -35,6 +36,7 @@ allowed-tools: Read, Bash
      --label "{type_label}" \
      --label "{domain_label}"
    ```
+8. PR 생성 성공 시 `.claude/issue_log.json`에서 현재 브랜치명과 일치하는 항목 삭제
 
 ## PR 제목 규칙
 

@@ -14,7 +14,7 @@ allowed-tools: Bash
 4. `git fetch upstream`
 5. `git switch claude-setup 2>/dev/null || git switch -c claude-setup upstream/claude-setup 2>/dev/null || git switch -c claude-setup`
 6. `cp -r "$TMPDIR/.claude" . 2>/dev/null; cp "$TMPDIR/CLAUDE.md" . 2>/dev/null` — 백업 복원 (tmpdir 아직 유지)
-7. `git add -f .claude/ CLAUDE.md`
+7. `git add -f .claude/ CLAUDE.md && git reset HEAD .claude/issue_log.json 2>/dev/null` — issue_log.json 제외
 8. `git diff --cached --name-only` 로 변경 파일 확인 — 없으면 중단
 9. `git commit -m "chore: update claude settings"`
 10. `git push upstream claude-setup`
