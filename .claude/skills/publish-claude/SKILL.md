@@ -20,5 +20,6 @@ allowed-tools: Bash
 10. `git push upstream claude-setup`
 11. `git switch $CURRENT`
 12. `cp -r "$TMPDIR/.claude" . 2>/dev/null; cp "$TMPDIR/CLAUDE.md" . 2>/dev/null; rm -rf "$TMPDIR"` — 원래 브랜치에도 파일 복원 후 tmpdir 삭제
+13. `git branch -D claude-setup` — 로컬 claude-setup 브랜치 삭제 (파일이 untracked 상태로 남아 브랜치 전환 시 사라지지 않음)
 
 완료 후 변경된 파일 목록과 push 결과를 출력.
