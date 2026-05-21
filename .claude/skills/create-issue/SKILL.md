@@ -8,7 +8,7 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입, 관심사 등록)
 
 ## 실행 순서
 
-1. `scripts/issue_config.json` 읽기
+1. `.claude/issue_config.json` 읽기
 2. `docs/draft/milestones.md`에서 제목에 $ARGUMENTS 포함된 이슈 검색
    - **매칭 있음**: 3번으로
    - **매칭 없음 → 신규 이슈 모드**:

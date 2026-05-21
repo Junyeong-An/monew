@@ -1,0 +1,35 @@
+{
+  "assignees": {
+    "팀장":  "FILL_IN",
+    "최우준": "FILL_IN",
+    "김호현": "FILL_IN",
+    "안준영": "FILL_IN",
+    "김명근": "FILL_IN",
+    "엄주혁": "FILL_IN",
+    "노정빈": "FILL_IN",
+    "전체":   []
+  },
+  "labels": {
+    "FEAT":     "feat",
+    "INFRA":    "infra",
+    "DEPLOY":   "deploy",
+    "BATCH":    "batch",
+    "TEST":     "test",
+    "REFACTOR": "refactor",
+    "DOCS":     "docs",
+    "CHORE":    "chore",
+    "ADR":      "adr",
+    "DONE":     "chore"
+  },
+  "milestones": {
+    "Phase 0": { "title": "Phase 0: 사전기간",       "due": "2026-05-21T00:00:00Z" },
+    "Phase 1": { "title": "Phase 1: 1차 스프린트",   "due": "2026-05-27T00:00:00Z" },
+    "Phase 2": { "title": "Phase 2: 2차 스프린트",   "due": "2026-06-03T00:00:00Z" },
+    "Phase 3": { "title": "Phase 3: 중간 발표 준비", "due": "2026-06-03T00:00:00Z" },
+    "Phase 4": { "title": "Phase 4: 중간 발표",      "due": "2026-06-04T00:00:00Z" },
+    "Phase 5": { "title": "Phase 5: 3차 스프린트",   "due": "2026-06-14T00:00:00Z" },
+    "Phase 6": { "title": "Phase 6: 최종 발표 준비", "due": "2026-06-15T00:00:00Z" },
+    "Phase 7": { "title": "Phase 7: 최종 발표",      "due": "2026-06-16T00:00:00Z" }
+  },
+  "reviewers": ["FILL_IN", "FILL_IN"]
+}

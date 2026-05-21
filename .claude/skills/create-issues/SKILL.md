@@ -8,7 +8,7 @@ ARGUMENTS: $ARGUMENTS (phase 번호. 예: 1. 생략 시 전체)
 
 ## 실행 순서
 
-1. `scripts/issue_config.json` 읽기 → FILL_IN 남아있으면 중단하고 입력 요청
+1. `.claude/issue_config.json` 읽기 → FILL_IN 남아있으면 중단하고 입력 요청
 2. `docs/draft/milestones.md`에서 Phase $ARGUMENTS 이슈 전체 파싱
 3. 각 이슈별 title/label/assignee/milestone/body 데이터 완성
 4. Subagent에 이슈 목록 전달하여 실행 위임:
