@@ -32,6 +32,51 @@
       "infra":        "infra"
     }
   },
+  "project": {
+    "title": "monew",
+    "id": "PVT_kwDOENwgXM4BYEXZ"
+  },
+  "issue_types": {
+    "feat":     { "name": "Feature", "id": "IT_kwDOENwgXM4B_TeH" },
+    "fix":      { "name": "Bug",     "id": "IT_kwDOENwgXM4B_TeG" },
+    "refactor": { "name": "Feature",    "id": "IT_kwDOENwgXM4B_TeH" },
+    "docs":     { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "test":     { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "batch":    { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "chore":    { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "deploy":   { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "adr":      { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" },
+    "done":     { "name": "Task",    "id": "IT_kwDOENwgXM4B_TeF" }
+  },
+  "project_fields": {
+    "status": {
+      "id": "PVTSSF_lADOENwgXM4BYEXZzhTMvwM",
+      "default": "f75ad846",
+      "options": { "Todo": "f75ad846", "In progress": "47fc9ee4", "In review": "2447fc4e", "Done": "98236657" }
+    },
+    "priority": {
+      "id": "PVTSSF_lADOENwgXM4BYEXZzhTMwHM",
+      "default": "07c2e4d1",
+      "options": { "Very High": "4cbba983", "High": "e98a679b", "Middle": "07c2e4d1", "Low": "7af1e400", "Very Low": "39830969" }
+    },
+    "start_date": { "id": "PVTF_lADOENwgXM4BYEXZzhTMwHc" },
+    "target_date": { "id": "PVTF_lADOENwgXM4BYEXZzhTMwHg" },
+    "category": {
+      "id": "PVTSSF_lADOENwgXM4BYEXZzhTcTcs",
+      "options": {
+        "feat":     "e4c97599",
+        "fix":      "e2c099b6",
+        "refactor": "847ab97c",
+        "test":     "7184ac69",
+        "deploy":   "7d96c777",
+        "batch":    "fe58c453",
+        "docs":     "3b66e203",
+        "chore":    "063008d6",
+        "adr":      "60d9da48",
+        "done":     "063008d6"
+      }
+    }
+  },
   "milestones": {
     "Phase 0": { "number": 1, "title": "Phase 0: 사전기간",       "due": "2026-05-21T00:00:00Z" },
     "Phase 1": { "number": 2, "title": "Phase 1: 1차 스프린트",   "due": "2026-05-27T00:00:00Z" },
