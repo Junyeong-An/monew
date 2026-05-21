@@ -86,7 +86,6 @@ com.sprint.mission.monew/
 /implement-domain {도메인}   # Entity→Service→Controller 전체 스캐폴딩
 /write-junit-test {클래스}   # JUnit5 테스트 생성 + test(red): 커밋
 /create-issue {키워드}       # milestones.md에서 이슈 검색 후 GitHub 생성
-/create-issues {phase}      # phase 전체 이슈 일괄 생성
 /start-issue {키워드}        # 이슈 찾아 브랜치 생성
 /create-pr                   # 현재 브랜치 PR 자동 생성
 /fix-review                  # PR 리뷰 코멘트 반영
