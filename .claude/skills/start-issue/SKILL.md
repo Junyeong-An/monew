@@ -12,6 +12,7 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입)
 2. 복수 매칭 시 목록 출력 후 선택 요청
 3. 이슈 제목과 prefix로 브랜치명 생성: `{prefix}/{도메인}/{설명}`
    - 예) `[FEAT] 회원가입 API 구현` → `feat/user/register`
+   - 도메인 매핑: `공통` → `infra`
 4. 현재 브랜치가 dev가 아니면 경고
 5. `git switch dev && git pull upstream dev & git push origin dev`
 6. `git switch -c {브랜치명}`

@@ -47,7 +47,7 @@ com.sprint.mission.monew/
 └── batch/            # 심화 — NewsCollect, NotificationClean, ArticleBackup, LogUpload
 ```
 
-각 도메인: `controller/(api/) → service/ → repository/(querydsl/)`, entity/, dto/, mapper/ 서브패키지 분리
+각 도메인: `controller/(api/) → service/ → repository/(querydsl/)`, entity/, dto/, exception/, mapper/ 서브패키지 분리
 
 ## Commands
 

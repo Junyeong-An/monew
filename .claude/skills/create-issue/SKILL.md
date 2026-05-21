@@ -26,7 +26,7 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입, 관심사 등록)
    Milestone은 `--milestone "{title}"` 형식으로 전달 (번호 아닌 제목 사용)
    Milestone 없으면 먼저 생성: `gh api repos/{owner}/{repo}/milestones --method POST -f title=... -f due_on=...`
 7. 사용자에게 Priority 선택 요청 (Very High / High / Middle / Low / Very Low, 기본값 Middle)
-   Target date 입력 요청 (기본값: 해당 milestone due 날짜, YYYY-MM-DD)
+   Target date 입력 요청 (기본값: 오늘 날짜, 사용자 입력 있으면 입력값 사용, YYYY-MM-DD)
 8. `gh issue create --repo {upstream_owner}/{upstream_repo} --title "..." --label "type_label" --label "domain_label" --assignee "..." --milestone "{milestone_title}" --project "monew" --body "..."` → 반환된 issue URL 저장
 9. issue node ID 조회: `gh api repos/{owner}/{repo}/issues/{number} --jq '.node_id'`
    project item ID 조회:
