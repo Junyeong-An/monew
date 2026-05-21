@@ -32,10 +32,13 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입)
 📋 작업 목록 — {이슈 제목}
 
 구현 순서:
-1. {Domain}Entity
+1. {Domain}Entity      → /write-junit-test {Domain}
+                          (팩토리 메서드·상태변경·소프트딜리트 시나리오별 red→green)
 2. {Domain}Repository
 3. {Domain}Service     → /write-junit-test {Domain}Service
+                          (메서드별 red→green 반복. 스킬이 첫 번째 시나리오부터 안내)
 4. {Domain}Controller  → /write-junit-test {Domain}Controller
+                          (엔드포인트별 red→green 반복)
 
 API 스펙:
   {HTTP Method} {path}
