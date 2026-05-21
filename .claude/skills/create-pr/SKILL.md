@@ -17,9 +17,12 @@ allowed-tools: Read, Bash
 4. **사용자에게 직접 입력 요청**:
    - 연결할 이슈 번호 (예: 7) → `Closes #N`
 5. 브랜치 prefix 기반 type label 결정, domain label 추론 (불확실하면 사용자 확인)
-6. `test(red):` / `test(green):` / `refactor:` 커밋 존재 여부로 TDD 체크박스 자동 체크
-7. `git diff upstream/dev...HEAD --stat` 기반 리뷰 포인트 1-2줄 생성
-8. PR 작성자를 reviewer 목록에서 제외 후:
+6. `.github/pull_request_template.md` 읽기 → 본문 기반으로 body 작성:
+   - 체크박스 항목은 해당하는 것만 `[x]`로 체크, **해당 없는 항목은 목록에서 완전히 제거**
+   - `test(red):` / `test(green):` / `refactor:` 커밋 존재 여부로 TDD 체크박스 자동 체크
+   - 리뷰 포인트: `git diff upstream/dev...HEAD --stat` 기반 1-2줄 생성
+   - 스크린샷/참고 자료: 없으면 섹션 자체 제거
+7. PR 작성자를 reviewer 목록에서 제외 후:
    ```
    gh pr create \
      --repo {upstream_owner}/{upstream_repo} \
