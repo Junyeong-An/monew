@@ -40,7 +40,7 @@ com.sprint.mission.monew/
 ├── common/
 │   ├── config/       # JpaConfig, QuerydslConfig, MongoConfig, S3Config, SwaggerConfig
 │   ├── exception/    # MonewException, ErrorCode, GlobalExceptionHandler
-│   ├── response/     # ErrorResponse, CursorPageResponse<T>
+│   ├── dto/          # ErrorResponse, CursorPageResponse<T>
 │   └── filter/       # MdcLoggingFilter
 ├── domain/           # user/ interest/ article/ comment/ notification/ useractivity/
 ├── external/         # naver/ rss/
