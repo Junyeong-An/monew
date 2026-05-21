@@ -22,5 +22,7 @@ ARGUMENTS: $ARGUMENTS (검색 키워드. 예: 회원가입, 관심사 등록)
 4. prefix → type label, 이슈 제목에서 도메인 키워드 추론 → domain label (해당 없으면 질문)
    담당자 이름 → GitHub username 변환
 5. prefix에 맞는 `.github/ISSUE_TEMPLATE/*.md` 구조로 본문 생성
-6. Milestone 없으면 먼저 생성: `gh api repos/{owner}/{repo}/milestones --method POST -f title=... -f due_on=...`
-7. `gh issue create --title "..." --label "type_label" --label "domain_label" --assignee "..." --body "..."`
+6. repo 정보 확인: `gh repo view --json nameWithOwner` → upstream repo 식별
+   Milestone은 `--milestone "{title}"` 형식으로 전달 (번호 아닌 제목 사용)
+   Milestone 없으면 먼저 생성: `gh api repos/{owner}/{repo}/milestones --method POST -f title=... -f due_on=...`
+7. `gh issue create --repo {upstream_owner}/{upstream_repo} --title "..." --label "type_label" --label "domain_label" --assignee "..." --milestone "{milestone_title}" --body "..."`
