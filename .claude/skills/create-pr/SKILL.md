@@ -14,11 +14,24 @@ allowed-tools: Read, Bash
      - `git status --short` + `git diff HEAD --stat` 출력
      - 커밋할 파일 목록을 사용자에게 보여주고 선택 요청
      - 선택된 파일 `git add (-f 포함)` → 커밋 메시지 제안 후 `git commit` → `git push origin {브랜치명}`
-4. `docs/milestones.md`에서 브랜치 키워드로 이슈 번호 매칭 → `Closes #N`
-5. 브랜치 prefix 기반 PR 유형 체크박스 자동 체크
+4. **사용자에게 직접 입력 요청**:
+   - 연결할 이슈 번호 (예: 7) → `Closes #N`
+5. 브랜치 prefix 기반 type label 결정, domain label 추론 (불확실하면 사용자 확인)
 6. `test(red):` / `test(green):` / `refactor:` 커밋 존재 여부로 TDD 체크박스 자동 체크
 7. `git diff upstream/dev...HEAD --stat` 기반 리뷰 포인트 1-2줄 생성
-8. PR 작성자를 reviewer 목록에서 제외 후 `gh pr create --repo {upstream} --head {fork}:{브랜치} --base dev --title "..." --body "..." --reviewer "..."`
+8. PR 작성자를 reviewer 목록에서 제외 후:
+   ```
+   gh pr create \
+     --repo {upstream_owner}/{upstream_repo} \
+     --head {fork_owner}:{브랜치} \
+     --base dev \
+     --title "..." \
+     --body "..." \
+     --reviewer "{reviewers}" \
+     --assignee "{PR_작성자_GitHub_username}" \
+     --label "{type_label}" \
+     --label "{domain_label}"
+   ```
 
 ## PR 제목 규칙
 
