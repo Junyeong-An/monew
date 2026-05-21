@@ -10,10 +10,9 @@ allowed-tools: Bash
    ```
    which google-java-format
    ```
-   미설치 시 아래 안내 출력 후 중단:
+   미설치 시 자동 설치:
    ```
-   google-java-format 미설치. 설치 후 재실행:
-     brew install google-java-format
+   brew install google-java-format
    ```
 
 2. 변경된 `.java` 파일 목록 수집:

@@ -1,35 +1,46 @@
 {
   "assignees": {
-    "팀장":  "FILL_IN",
-    "최우준": "FILL_IN",
-    "김호현": "FILL_IN",
-    "안준영": "FILL_IN",
-    "김명근": "FILL_IN",
-    "엄주혁": "FILL_IN",
-    "노정빈": "FILL_IN",
-    "전체":   []
+    "팀장":  "pintordev",
+    "최우준": "wuuujuuun",
+    "김호현": "pintordev",
+    "안준영": "Junyeong-An",
+    "김명근": "DonToong2",
+    "엄주혁": "eomoff",
+    "노정빈": "vincent856",
+    "전체":   ["pintordev", "wuuujuuun", "Junyeong-An", "DonToong2", "eomoff", "vincent856"]
   },
   "labels": {
-    "FEAT":     "feat",
-    "INFRA":    "infra",
-    "DEPLOY":   "deploy",
-    "BATCH":    "batch",
-    "TEST":     "test",
-    "REFACTOR": "refactor",
-    "DOCS":     "docs",
-    "CHORE":    "chore",
-    "ADR":      "adr",
-    "DONE":     "chore"
+    "type": {
+      "FEAT":     "feat",
+      "FIX":      "fix",
+      "DEPLOY":   "deploy",
+      "BATCH":    "batch",
+      "TEST":     "test",
+      "REFACTOR": "refactor",
+      "DOCS":     "docs",
+      "CHORE":    "chore",
+      "ADR":      "adr",
+      "DONE":     "chore"
+    },
+    "domain": {
+      "user":         "user",
+      "interest":     "interest",
+      "article":      "article",
+      "comment":      "comment",
+      "notification": "notification",
+      "activity":     "activity",
+      "infra":        "infra"
+    }
   },
   "milestones": {
-    "Phase 0": { "title": "Phase 0: 사전기간",       "due": "2026-05-21T00:00:00Z" },
-    "Phase 1": { "title": "Phase 1: 1차 스프린트",   "due": "2026-05-27T00:00:00Z" },
-    "Phase 2": { "title": "Phase 2: 2차 스프린트",   "due": "2026-06-03T00:00:00Z" },
-    "Phase 3": { "title": "Phase 3: 중간 발표 준비", "due": "2026-06-03T00:00:00Z" },
-    "Phase 4": { "title": "Phase 4: 중간 발표",      "due": "2026-06-04T00:00:00Z" },
-    "Phase 5": { "title": "Phase 5: 3차 스프린트",   "due": "2026-06-14T00:00:00Z" },
-    "Phase 6": { "title": "Phase 6: 최종 발표 준비", "due": "2026-06-15T00:00:00Z" },
-    "Phase 7": { "title": "Phase 7: 최종 발표",      "due": "2026-06-16T00:00:00Z" }
+    "Phase 0": { "number": 1, "title": "Phase 0: 사전기간",       "due": "2026-05-21T00:00:00Z" },
+    "Phase 1": { "number": 2, "title": "Phase 1: 1차 스프린트",   "due": "2026-05-27T00:00:00Z" },
+    "Phase 2": { "number": 3, "title": "Phase 2: 2차 스프린트",   "due": "2026-06-03T00:00:00Z" },
+    "Phase 3": { "number": 4, "title": "Phase 3: 중간 발표 준비", "due": "2026-06-03T00:00:00Z" },
+    "Phase 4": { "number": 5, "title": "Phase 4: 중간 발표",      "due": "2026-06-04T00:00:00Z" },
+    "Phase 5": { "number": 6, "title": "Phase 5: 3차 스프린트",   "due": "2026-06-14T00:00:00Z" },
+    "Phase 6": { "number": 7, "title": "Phase 6: 최종 발표 준비", "due": "2026-06-15T00:00:00Z" },
+    "Phase 7": { "number": 8, "title": "Phase 7: 최종 발표",      "due": "2026-06-16T00:00:00Z" }
   },
-  "reviewers": ["FILL_IN", "FILL_IN"]
+  "reviewers": ["pintordev", "wuuujuuun", "Junyeong-An", "DonToong2", "eomoff", "vincent856"]
 }

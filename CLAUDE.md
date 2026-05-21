@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+> **IMPORTANT**: Java 코드를 작성하기 전에 반드시 아래 "절대 하지 말 것" 전체를 읽고 준수할 것.
+> 위반 시 hook이 경고를 출력하며, PR 리뷰에서 즉시 reject 사유가 됨.
+
 ## 절대 하지 말 것
 
 - `FetchType.EAGER` — LAZY + fetch join 필수
@@ -67,13 +70,46 @@ com.sprint.mission.monew/
 
 **TDD 커밋**: `test(red):` 실패 테스트 → `test(green):` 구현 → `refactor:` 정리 (각 단계 별도 커밋 필수)
 
+**일반 커밋**: 제목 한글 필수, body 선택 (`feat: 사용자 회원가입 구현`)
+태그: `feat:` `fix:` `refactor:` `docs:` `test:` `chore:` `batch:` `deploy:`
+> Squash and Merge이므로 PR 제목 = squash 커밋 메시지. 중간 커밋 메시지는 참고용.
+
+## Key Files
+
+- `docs/draft/milestones.md` — 전체 이슈 목록 (Phase별)
+- `docs/api-docs.json` — OpenAPI 3.1.0 명세 (29개 엔드포인트)
+- `.claude/issue_config.json` — 담당자·라벨·마일스톤 설정
+
+## Claude Skills
+
+```
+/implement-domain {도메인}   # Entity→Service→Controller 전체 스캐폴딩
+/write-junit-test {클래스}   # JUnit5 테스트 생성 + test(red): 커밋
+/create-issue {키워드}       # milestones.md에서 이슈 검색 후 GitHub 생성
+/create-issues {phase}      # phase 전체 이슈 일괄 생성
+/start-issue {키워드}        # 이슈 찾아 브랜치 생성
+/create-pr                   # 현재 브랜치 PR 자동 생성
+/fix-review                  # PR 리뷰 코멘트 반영
+/java-style                  # Google Java Style 준수 여부 점검
+/sync-claude                 # claude-setup 브랜치에서 최신 설정 동기화
+```
+
 ## Git Workflow
 
-```
-main → dev → feat/user/register
-```
+브랜치: `main → dev → {prefix}/{domain}/{description}`
+(예: `feat/user/register`, `fix/article/duplicate-url`)
+prefix: `feat` `fix` `refactor` `docs` `test` `chore` `batch` `deploy`
 
-PR 대상: `dev` | 제목: `feat: 작업 내용` | 머지: **2인 이상** 리뷰 + `Closes #이슈번호`
+워크플로우:
+1. Issue 등록
+2. `git switch dev && git pull upstream dev && git push origin dev`
+3. `git switch -c feat/user/register`
+4. 개발
+5. PR 전 `git pull upstream dev` → conflict 확인
+6. `git push origin feat/user/register`
+7. PR 생성: `dev ← feat/user/register`, Squash and Merge
+   - 제목: `feat: 사용자 회원가입 구현` (squash 커밋 메시지와 동일)
+   - **2인 이상** 리뷰 승인 + `Closes #이슈번호`
 
 ## API Spec
 

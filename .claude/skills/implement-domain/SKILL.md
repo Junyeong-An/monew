@@ -19,24 +19,22 @@ ARGUMENTS: $ARGUMENTS (도메인명. 예: User, Article, Comment)
 
 ### 1. Entity
 
-`BaseUpdatableEntity`(수정 가능) 또는 `BaseEntity`(불변) 상속. `@EntityListeners`, `@Id`, `createdAt`, `updatedAt` 재선언 금지.
-
 ```java
 @Entity @Table(name = "{도메인소문자}s")   // 소문자 복수형
 @Getter @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class {도메인} extends BaseUpdatableEntity {
+@EntityListeners(AuditingEntityListener.class)
+public class {도메인} {
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
 
     // 연관관계: 전부 FetchType.LAZY
+
+    @CreatedDate @Column(nullable = false, updatable = false) private Instant createdAt;
+    @LastModifiedDate private Instant updatedAt;
     private Instant deletedAt;  // 소프트딜리트 대상만
 
     // setter 없음. 상태 변경 메서드만:
     public void softDelete() { this.deletedAt = Instant.now(); }
-
-    public static {도메인} create(...) {
-        {도메인} entity = new {도메인}();
-        // 필드 설정
-        return entity;
-    }
 }
 ```
 
