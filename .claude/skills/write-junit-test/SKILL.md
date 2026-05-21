@@ -11,8 +11,8 @@ ARGUMENTS: $ARGUMENTS (대상 클래스명. 예: UserService)
 ### 1. 컨텍스트 수집
 
 다음을 읽기:
-- `src/main/java/com/sprint/mission/monew/domain/**/$ARGUMENTS.java` (대상 클래스)
-- `src/test/java/com/sprint/mission/monew/domain/**/*Test.java` (기존 테스트 패턴 참조)
+- `src/main/java/com/sprint/mission/monew/**/$ARGUMENTS.java` (대상 클래스 — domain/ 및 common/ 포함)
+- `src/test/java/com/sprint/mission/monew/**/*Test.java` (기존 테스트 패턴 참조)
 - `docs/conventions.md` 섹션 8
 
 ### 2. 레이어별 설정
@@ -61,21 +61,43 @@ Controller 추가:
 
 ### 4. 저장 위치
 
-`src/test/java/com/sprint/mission/monew/domain/{도메인}/{대상}Test.java`
+대상 클래스의 main 경로를 그대로 test로 미러링:
+- `src/main/.../domain/user/service/UserService.java` → `src/test/.../domain/user/service/UserServiceTest.java`
+- `src/main/.../common/filter/MdcLoggingInterceptor.java` → `src/test/.../common/filter/MdcLoggingInterceptorTest.java`
 
 ### 5. TDD test(red): 커밋
 
+테스트 파일 저장 후, **구현 파일 존재 여부를 먼저 확인**:
+
 ```bash
-./gradlew test --tests "*.{대상}Test"
+find src/main -name "$ARGUMENTS.java"
 ```
 
-실패 확인 후:
+**구현 파일이 없는 경우 (정상 TDD 순서):**
+```bash
+./gradlew test --tests "*.{대상}Test" 2>&1
+# 전체 출력을 그대로 표시 — 컴파일 에러 메시지(어떤 클래스/메서드가 없는지) 확인용
+```
+출력 결과를 사용자에게 그대로 보여준 뒤:
 ```bash
 git add src/test/java/.../{대상}Test.java
 git commit -m "test(red): {대상} 실패 테스트 추가"
 ```
 
-### 완료 후 안내
+완료 안내:
+```
+이제 구현하세요.
+완료 후:
+  ./gradlew test --tests "*.{대상}Test"   # BUILD SUCCESSFUL 확인
+  git add src/main/java/...
+  git commit -m "test(green): {대상} 구현"
+리팩토링 후:
+  git commit -m "refactor: {대상} 정리"
+```
 
-구현 완료 → `./gradlew test` 통과 확인 → `git commit -m "test(green): {대상} 구현"`
-리팩토링 후 → `git commit -m "refactor: {대상} 정리"`
+**구현 파일이 이미 있는 경우 (TDD 순서 역전):**
+- ⚠️ 경고: "구현 파일이 이미 존재합니다. red 상태를 만들 수 없습니다."
+- 테스트 파일만 커밋하지 않고 중단
+- 사용자에게 선택지 안내:
+  1. `git stash` 또는 구현 파일 임시 삭제 → `test(red):` 커밋 → 복원 → `test(green):` 커밋
+  2. TDD 순서를 포기하고 `test(green):` 으로 직접 커밋
