@@ -1,0 +1,128 @@
+language: "ko-KR"
+
+tone_instructions: |
+  친절하고 건설적인 피드백을 제공하되, 아래 팀 규칙 위반은 반드시 명확히 지적하세요.
+  개선 방법도 함께 제시해주세요.
+
+reviews:
+  profile: "assertive"
+
+  auto_review:
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - "main"
+      - "dev"
+
+  high_level_summary: true
+  high_level_summary_instructions: |
+    다음 항목을 포함해 요약하세요:
+    - 변경 내용 (한 줄)
+    - 영향받는 도메인/API
+    - Breaking change 여부
+  changed_files_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  estimate_code_review_effort: true
+  suggested_labels: true
+  suggested_reviewers: true
+  poem: false
+
+  path_filters:
+    - "!target/**"
+    - "!build/**"
+    - "!**/*.class"
+    - "!**/*.lock"
+    - "!gradle/wrapper/gradle-wrapper.jar"
+    - "!**/.gitkeep"
+
+  path_instructions:
+    - path: "src/main/java/**/controller/**"
+      instructions: |
+        [Controller 규칙]
+        금지:
+        - @Transactional 사용 → Service 레이어에서만 허용
+        - @Autowired 필드 주입 → @RequiredArgsConstructor + 생성자 주입 사용
+        - 비즈니스 로직 → Service에 위임
+        - System.out.println / e.printStackTrace() → @Slf4j 사용
+
+        필수:
+        - 요청 파라미터 유효성 검사 (@Valid)
+        - UUID 파라미터는 String이 아닌 UUID 타입 직접 사용
+        - 헤더 이름 오타 주의: 반드시 `Monew-Request-User-ID` (대소문자 정확히)
+        - 성공 응답을 래퍼로 감싸지 말 것 → DTO 직접 반환, 에러만 ErrorResponse
+
+    - path: "src/main/java/**/entity/**"
+      instructions: |
+        [Entity 규칙 — 가장 엄격하게 검토]
+        금지:
+        - setter 메서드 → 상태 변경은 의도를 드러내는 메서드명 사용
+        - @Builder → 정적 팩토리 메서드 사용
+        - Long 타입 PK → UUID만 허용
+        - FetchType.EAGER → LAZY + fetch join 필수
+        - isDeleted 필드 → deletedAt(Instant) null 여부로만 소프트딜리트 처리
+
+        필수:
+        - UUID PK, Instant 타입 시간 필드
+        - @EnableJpaAuditing 활용 (createdAt, updatedAt)
+        - LAZY fetch 기본
+
+    - path: "src/main/java/**/service/**"
+      instructions: |
+        [Service 규칙]
+        금지:
+        - Entity → DTO 직접 변환 → MapStruct Mapper 사용
+        - Optional.get() 직접 호출 → orElseThrow() 사용
+        - @Transactional in Controller → Service에서만
+        - save() 반환값 무시 → 반환된 영속 엔티티 사용
+
+        필수:
+        - 클래스 레벨 @Transactional(readOnly=true) 기본
+        - 변경 메서드만 @Transactional 재정의
+        - 예외: MonewException → ErrorCode enum → 팩토리 메서드 패턴
+
+    - path: "src/main/java/**/repository/**"
+      instructions: |
+        [Repository 규칙]
+        - N+1 쿼리 발생 여부 반드시 확인 → fetch join 또는 @EntityGraph 사용
+        - 대용량 조회는 Pageable 사용
+        - 복잡한 쿼리는 QueryDSL 고려
+
+    - path: "src/main/java/**/dto/**"
+      instructions: |
+        [DTO 규칙]
+        - setter 금지
+        - 요청 DTO는 유효성 검사 애노테이션 포함 (@NotNull, @NotBlank 등)
+        - 성공 응답 DTO는 래퍼 클래스로 감싸지 말 것
+
+    - path: "src/main/java/**/mapper/**"
+      instructions: |
+        [MapStruct Mapper 규칙]
+        - @Mapper(componentModel = "spring") 사용
+        - Service에서 직접 변환 코드 없이 이 Mapper를 통해서만 변환
+
+    - path: "src/main/java/**/batch/**"
+      instructions: |
+        [Batch 규칙]
+        - @Scheduled 메서드에 직접 로직 금지 → Service에 위임
+        - MongoDB/PostgreSQL 단일 트랜잭션 혼용 금지 → 별도 트랜잭션 분리
+
+    - path: "src/test/java/**"
+      instructions: |
+        [Test 규칙]
+        - @SpringBootTest 남발 금지 → 슬라이스 테스트 사용 (@WebMvcTest, @DataJpaTest 등)
+        - 테스트 간 상태 공유 금지 → @BeforeEach 초기화 필수
+        - given/when/then 구조 확인
+        - 한글 메서드명 사용 여부 확인
+
+  instructions: |
+    [전역 규칙]
+    - System.out.println / e.printStackTrace() 사용 금지 → @Slf4j + log 레벨 사용
+    - @Autowired 필드 주입 금지 → @RequiredArgsConstructor + 생성자 주입
+    - String으로 UUID 파라미터 받는 것 금지 → UUID 타입 직접 사용
+    - 커밋에 AI co-author 문구 포함 금지 (Co-authored-by 등)
+    - jakarta.* 임포트 사용 (javax.* 금지, Spring Boot 3.x)
+    - 성공 응답을 공통 래퍼로 감싸지 말 것 → DTO 직접 반환
+
+chat:
+  auto_reply: true

@@ -1,0 +1,220 @@
+name: PR Review & Discord Notification
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [dev, main]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  discord-pr-notify:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord embed
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          ACTION="${{ github.event.action }}"
+          if [[ "$ACTION" == "synchronize" ]]; then
+            LABEL="🔄 PR 변경"
+            COLOR=15105570
+          else
+            LABEL="📌 PR 등록"
+            COLOR=3447003
+          fi
+
+          jq -n \
+            --arg title "${LABEL} | ${{ github.event.pull_request.title }}" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg base "${{ github.event.pull_request.base.ref }}" \
+            --argjson color "$COLOR" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                color: $color,
+                fields: [
+                  {"name": "👤 작성자", "value": $actor, "inline": true},
+                  {"name": "🎯 대상 브랜치", "value": $base, "inline": true}
+                ],
+                footer: {"text": "Code Breakers Bot"}
+              }]
+            }' \
+          | curl -s -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"
+
+  claude-review:
+    if: >
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.draft == false &&
+      vars.CLAUDE_REVIEW_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract diff
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+          ACTION="${{ github.event.action }}"
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.event.after }}"
+          BASE="${{ github.event.pull_request.base.ref }}"
+
+          if [[ "$ACTION" == "synchronize" ]] && [[ "$BEFORE" != "0000000000000000000000000000000000000000" ]]; then
+            git diff "$BEFORE"..."$AFTER" > pr_diff.txt
+          else
+            git diff "origin/$BASE"...HEAD > pr_diff.txt
+          fi
+
+          SIZE=$(wc -c < pr_diff.txt)
+          if [[ "$SIZE" -gt 153600 ]]; then
+            truncate -s 153600 pr_diff.txt
+            echo "diff truncated: ${SIZE} → 153600 bytes"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install anthropic requests
+
+      - name: Run Claude review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BOT_GITHUB_TOKEN: ${{ secrets.BOT_GITHUB_TOKEN }}
+          REPO_NAME: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_ACTION: ${{ github.event.action }}
+        run: python .github/scripts/claude_review.py
+
+      - name: Send review completion embed
+        if: success()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          ACTION="${{ github.event.action }}"
+          LABEL=$([[ "$ACTION" == "synchronize" ]] && echo "재" || echo "초기")
+          jq -n \
+            --arg title "🔍 리뷰 완료 | PR #${{ github.event.pull_request.number }}" \
+            --arg url "${{ github.event.pull_request.html_url }}" \
+            --arg desc "${LABEL}리뷰 등록" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc,
+                color: 3066993,
+                footer: {text: "Code Breakers Bot"}
+              }]
+            }' \
+          | curl -s -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"
+
+  review-notify:
+    if: github.event_name == 'pull_request_review'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get review comment count
+        id: review_info
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COUNT=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews/${{ github.event.review.id }}/comments" \
+            --jq 'length' 2>/dev/null || echo 0)
+          echo "comment_count=$COUNT" >> "$GITHUB_OUTPUT"
+
+      - name: Send review notification embed
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          STATE="${{ github.event.review.state }}"
+          COUNT="${{ steps.review_info.outputs.comment_count }}"
+          REVIEWER="${{ github.event.review.user.login }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          REVIEW_URL="${{ github.event.review.html_url }}"
+
+          case "$STATE" in
+            approved)           STATE_LABEL="✅ 승인" ;;
+            changes_requested)  STATE_LABEL="🔄 수정 요청" ;;
+            commented)          STATE_LABEL="💬 코멘트" ;;
+            dismissed)          STATE_LABEL="❌ 기각" ;;
+            *)                  STATE_LABEL="$STATE" ;;
+          esac
+
+          if [[ "$STATE" == "approved" ]] && [[ "$COUNT" == "0" ]]; then
+            SHOW_HINT=false
+          else
+            SHOW_HINT=true
+          fi
+
+          jq -n \
+            --arg title "💬 리뷰 등록 | PR #${PR_NUM}" \
+            --arg url "$REVIEW_URL" \
+            --arg desc "$PR_TITLE" \
+            --arg reviewer "$REVIEWER" \
+            --arg state_label "$STATE_LABEL" \
+            --argjson count "$COUNT" \
+            --arg hint "/fix-review ${PR_NUM}" \
+            --argjson show_hint "$SHOW_HINT" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc,
+                color: 15105570,
+                fields: (if $show_hint then [
+                  {"name": "👤 리뷰어", "value": $reviewer, "inline": true},
+                  {"name": "📊 상태", "value": $state_label, "inline": true},
+                  {"name": "💬 코멘트", "value": ($count | tostring), "inline": true},
+                  {"name": "💡 힌트", "value": $hint, "inline": false}
+                ] else [
+                  {"name": "👤 리뷰어", "value": $reviewer, "inline": true},
+                  {"name": "📊 상태", "value": $state_label, "inline": true},
+                  {"name": "💬 코멘트", "value": ($count | tostring), "inline": true}
+                ] end),
+                footer: {"text": "Code Breakers Bot"}
+              }]
+            }' \
+          | curl -s -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"
+
+      - name: Check for 2 approvals
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          APPROVAL_COUNT=$(gh api \
+            "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews" \
+            --paginate \
+            --jq '[group_by(.user.login)[] | last | select(.state == "APPROVED")] | length')
+
+          if [[ "$APPROVAL_COUNT" -ge 2 ]]; then
+            jq -n \
+              --arg title "✅ 2명 승인 완료 | 머지 가능" \
+              --arg url "${{ github.event.pull_request.html_url }}" \
+              --arg desc "${{ github.event.pull_request.title }}" \
+              --arg pr_num "#${{ github.event.pull_request.number }}" \
+              '{
+                embeds: [{
+                  title: $title,
+                  url: $url,
+                  description: $desc,
+                  color: 5763719,
+                  fields: [
+                    {name: "🔢 PR", value: $pr_num, inline: true}
+                  ],
+                  footer: {text: "Code Breakers Bot"}
+                }]
+              }' \
+            | curl -s -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"
+          fi

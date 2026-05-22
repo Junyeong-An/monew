@@ -10,8 +10,9 @@
 - [ ] docs: 문서 수정
 - [ ] test: 테스트 추가·수정
 - [ ] batch: 배치 작업
-- [ ] infra: 빌드·설정·CI/CD 변경
+- [ ] deploy: CI/CD, 배포
 - [ ] chore: 기타
+- [ ] done: 완료
 
 ## 작업 내용
 
