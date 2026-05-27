@@ -92,7 +92,10 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
       builder.and(article.publishDate.loe(request.publishDateTo()));
     }
 
-    if (request.cursor() != null && request.after() != null) {
+    if ((request.cursor() == null) != (request.after() == null)) {
+      throw new IllegalArgumentException("cursor와 after는 함께 전달되어야 합니다.");
+    }
+    if (request.cursor() != null) {
       builder.and(buildCursorCondition(article, request));
     }
 
@@ -140,7 +143,7 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
                 .gt(cursorVal)
                 .or(article.viewCount.eq(cursorVal).and(article.createdAt.gt(after)));
       }
-      default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + request.orderBy());
+      default -> throw new IllegalStateException("지원하지 않는 정렬 기준: " + request.orderBy());
     };
   }
 
@@ -152,7 +155,7 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
           case "publishDate" -> new OrderSpecifier<>(dir, article.publishDate);
           case "commentCount" -> new OrderSpecifier<>(dir, article.commentCount);
           case "viewCount" -> new OrderSpecifier<>(dir, article.viewCount);
-          default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + request.orderBy());
+          default -> throw new IllegalStateException("지원하지 않는 정렬 기준: " + request.orderBy());
         };
 
     return new OrderSpecifier<?>[] {primary, new OrderSpecifier<>(dir, article.createdAt)};

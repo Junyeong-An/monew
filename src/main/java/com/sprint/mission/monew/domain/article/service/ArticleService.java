@@ -59,7 +59,7 @@ public class ArticleService {
       case "publishDate" -> article.getPublishDate().toString();
       case "commentCount" -> String.valueOf(article.getCommentCount());
       case "viewCount" -> String.valueOf(article.getViewCount());
-      default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + orderBy);
+      default -> throw new IllegalStateException("지원하지 않는 정렬 기준: " + orderBy);
     };
   }
 }

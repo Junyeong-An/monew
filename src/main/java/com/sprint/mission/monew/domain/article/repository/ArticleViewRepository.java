@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> {
 
   @Query(
-      "SELECT av.article.id FROM ArticleView av"
+      "SELECT DISTINCT av.article.id FROM ArticleView av"
           + " WHERE av.article.id IN :articleIds AND av.userId = :userId")
   Set<UUID> findArticleIdsByArticleIdsAndUserId(
       @Param("articleIds") List<UUID> articleIds, @Param("userId") UUID userId);
