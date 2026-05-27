@@ -50,16 +50,6 @@ public class Article extends BaseSoftDeletableEntity {
     return article;
   }
 
-  public void incrementCommentCount() {
-    this.commentCount++;
-  }
-
-  public void decrementCommentCount() {
-    if (commentCount > 0) {
-      this.commentCount--;
-    }
-  }
-
   public void incrementViewCount() {
     this.viewCount++;
   }
