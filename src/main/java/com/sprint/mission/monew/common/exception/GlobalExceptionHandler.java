@@ -1,7 +1,6 @@
 package com.sprint.mission.monew.common.exception;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -79,27 +78,6 @@ public class GlobalExceptionHandler {
             FieldError::getField,
             fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid"
         ));
-    log.warn("[{}] {}", code.name(), details);
-    return errorResponse(code, details, e);
-  }
-
-  @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException e) {
-    ErrorCode code = ErrorCode.VALIDATION_ERROR;
-    Map<String, Object> details = new java.util.LinkedHashMap<>(
-        e.getConstraintViolations().stream()
-            .collect(Collectors.groupingBy(
-                cv -> {
-                  String path = cv.getPropertyPath().toString();
-                  int dot = path.lastIndexOf('.');
-                  return dot >= 0 ? path.substring(dot + 1) : path;
-                },
-                Collectors.mapping(
-                    cv -> cv.getMessage() != null ? cv.getMessage() : "invalid",
-                    Collectors.toList()
-                )
-            ))
-    );
     log.warn("[{}] {}", code.name(), details);
     return errorResponse(code, details, e);
   }
