@@ -4,6 +4,7 @@ import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleDto;
 import com.sprint.mission.monew.domain.article.dto.ArticleSearchRequest;
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.exception.ArticleInvalidSortFieldException;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import com.sprint.mission.monew.domain.article.repository.querydsl.ArticleQueryRepository;
@@ -59,7 +60,7 @@ public class ArticleService {
       case "publishDate" -> article.getPublishDate().toString();
       case "commentCount" -> String.valueOf(article.getCommentCount());
       case "viewCount" -> String.valueOf(article.getViewCount());
-      default -> throw new IllegalStateException("지원하지 않는 정렬 기준: " + orderBy);
+      default -> throw ArticleInvalidSortFieldException.withOrderBy(orderBy);
     };
   }
 }

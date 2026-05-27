@@ -25,6 +25,7 @@ public enum ErrorCode {
 
   // Article
   ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스 기사를 찾을 수 없습니다."),
+  ARTICLE_INVALID_SORT_FIELD(HttpStatus.BAD_REQUEST, "지원하지 않는 정렬 기준입니다."),
 
   // Comment
   COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),
