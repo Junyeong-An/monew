@@ -10,8 +10,10 @@ import com.sprint.mission.monew.domain.article.dto.ArticleSearchRequest;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.QArticle;
 import com.sprint.mission.monew.domain.article.entity.QArticleInterest;
+import com.sprint.mission.monew.domain.article.exception.ArticleInvalidCursorException;
 import com.sprint.mission.monew.domain.article.repository.querydsl.ArticleQueryRepository;
 import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -108,7 +110,12 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
 
     return switch (request.orderBy()) {
       case "publishDate" -> {
-        Instant cursorInstant = Instant.parse(request.cursor());
+        Instant cursorInstant;
+        try {
+          cursorInstant = Instant.parse(request.cursor());
+        } catch (DateTimeParseException ex) {
+          throw ArticleInvalidCursorException.withCursor(request.cursor());
+        }
         yield isDesc
             ? article
                 .publishDate
@@ -120,7 +127,12 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
                 .or(article.publishDate.eq(cursorInstant).and(article.createdAt.gt(after)));
       }
       case "commentCount" -> {
-        long cursorVal = Long.parseLong(request.cursor());
+        int cursorVal;
+        try {
+          cursorVal = Integer.parseInt(request.cursor());
+        } catch (NumberFormatException ex) {
+          throw ArticleInvalidCursorException.withCursor(request.cursor());
+        }
         yield isDesc
             ? article
                 .commentCount
@@ -132,7 +144,12 @@ public class ArticleQueryRepositoryImpl implements ArticleQueryRepository {
                 .or(article.commentCount.eq(cursorVal).and(article.createdAt.gt(after)));
       }
       case "viewCount" -> {
-        long cursorVal = Long.parseLong(request.cursor());
+        int cursorVal;
+        try {
+          cursorVal = Integer.parseInt(request.cursor());
+        } catch (NumberFormatException ex) {
+          throw ArticleInvalidCursorException.withCursor(request.cursor());
+        }
         yield isDesc
             ? article
                 .viewCount
