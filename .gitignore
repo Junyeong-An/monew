@@ -49,6 +49,7 @@ Thumbs.db
 ### Environment ###
 .env
 .env.*
+monew.env
 
 ### App Properties ###
 application*.yaml

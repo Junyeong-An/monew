@@ -4,13 +4,38 @@ on:
   pull_request_target:
     branches: [dev, main]
 
-permissions:
-  contents: read
-  id-token: write
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  filter:
+    name: Filter changed files
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      src: ${{ steps.f.outputs.src }}
+    steps:
+      - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
+        id: f
+        with:
+          filters: |
+            src:
+              - '**/*.java'
+              - '**/*.gradle'
+              - 'src/**'
+
+  test:
+    name: Run tests
+    needs: filter
+    if: needs.filter.outputs.src == 'true'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read    # 코드 체크아웃
+      id-token: write   # AWS OIDC 인증
 
     steps:
       - name: Checkout code
@@ -59,3 +84,13 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: build/reports/jacoco/test/jacocoTestReport.xml
           fail_ci_if_error: true
+
+  skip:
+    name: Skip CI
+    needs: filter
+    if: needs.filter.outputs.src != 'true'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: CI skipped
+        run: echo "CI skipped — no code changes"

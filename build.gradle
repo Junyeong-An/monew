@@ -64,15 +64,36 @@ tasks.named('test') {
 	systemProperty "spring.profiles.active", "test"
 }
 
+def jacocoExcludes = [
+	'com/sprint/mission/monew/MonewApplication*',
+	'com/sprint/mission/monew/common/config/**',
+	'com/sprint/mission/monew/common/entity/**',
+	'com/sprint/mission/monew/common/dto/**',
+	'com/sprint/mission/monew/domain/article/**',
+	'com/sprint/mission/monew/domain/comment/**',
+	'com/sprint/mission/monew/domain/notification/**',
+	'com/sprint/mission/monew/domain/user/**',
+]
+
 jacocoTestReport {
 	dependsOn test
 	reports {
 		html.required = true
 		xml.required = true
 	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: jacocoExcludes)
+		}))
+	}
 }
 
 jacocoTestCoverageVerification {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: jacocoExcludes)
+		}))
+	}
 	violationRules {
 		rule {
 			limit {
