@@ -11,6 +11,6 @@ public record ArticleDto(
     String title,
     Instant publishDate,
     String summary,
-    long commentCount,
-    long viewCount,
+    int commentCount,
+    int viewCount,
     boolean viewedByMe) {}

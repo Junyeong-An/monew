@@ -34,10 +34,10 @@ public class Article extends BaseSoftDeletableEntity {
   private String summary;
 
   @Column(nullable = false)
-  private long commentCount = 0;
+  private int commentCount = 0;
 
   @Column(nullable = false)
-  private long viewCount = 0;
+  private int viewCount = 0;
 
   public static Article create(
       ArticleSource source, String sourceUrl, String title, Instant publishDate, String summary) {
