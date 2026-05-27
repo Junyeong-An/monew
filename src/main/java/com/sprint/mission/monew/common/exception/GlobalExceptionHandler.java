@@ -68,16 +68,20 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException e) {
     ErrorCode code = ErrorCode.VALIDATION_ERROR;
-    Map<String, Object> details = e.getConstraintViolations().stream()
-        .collect(Collectors.toMap(
-            cv -> {
-              String path = cv.getPropertyPath().toString();
-              int dot = path.lastIndexOf('.');
-              return dot >= 0 ? path.substring(dot + 1) : path;
-            },
-            cv -> cv.getMessage() != null ? cv.getMessage() : "invalid",
-            (a, b) -> a
-        ));
+    Map<String, Object> details = new java.util.LinkedHashMap<>(
+        e.getConstraintViolations().stream()
+            .collect(Collectors.groupingBy(
+                cv -> {
+                  String path = cv.getPropertyPath().toString();
+                  int dot = path.lastIndexOf('.');
+                  return dot >= 0 ? path.substring(dot + 1) : path;
+                },
+                Collectors.mapping(
+                    cv -> cv.getMessage() != null ? cv.getMessage() : "invalid",
+                    Collectors.toList()
+                )
+            ))
+    );
     log.warn("[{}] {}", code.name(), details);
     return errorResponse(code, details, e);
   }
