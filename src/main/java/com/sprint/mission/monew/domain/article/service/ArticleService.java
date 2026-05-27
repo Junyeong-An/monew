@@ -2,12 +2,12 @@ package com.sprint.mission.monew.domain.article.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleDto;
-import com.sprint.mission.monew.domain.article.dto.ArticleSearchRequest;
+import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
+import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
-import com.sprint.mission.monew.domain.article.exception.ArticleInvalidSortFieldException;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
+import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
-import com.sprint.mission.monew.domain.article.repository.querydsl.ArticleQueryRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -22,16 +22,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ArticleService {
 
-  private final ArticleQueryRepository articleQueryRepository;
+  private final ArticleRepository articleRepository;
   private final ArticleViewRepository articleViewRepository;
   private final ArticleMapper articleMapper;
 
-  public CursorPageResponse<ArticleDto> search(ArticleSearchRequest request, UUID requestUserId) {
-    long totalElements = articleQueryRepository.count(request);
-    List<Article> articles = articleQueryRepository.findAll(request);
+  public CursorPageResponse<ArticleDto> search(ArticleQueryCondition condition, UUID requestUserId) {
+    long totalElements = articleRepository.count(condition);
+    List<Article> articles = articleRepository.findAll(condition);
 
-    boolean hasNext = articles.size() > request.limit();
-    List<Article> page = hasNext ? articles.subList(0, request.limit()) : articles;
+    boolean hasNext = articles.size() > condition.limit();
+    List<Article> page = hasNext ? articles.subList(0, condition.limit()) : articles;
 
     List<UUID> articleIds = page.stream().map(Article::getId).collect(Collectors.toList());
     Set<UUID> viewedIds =
@@ -48,19 +48,18 @@ public class ArticleService {
     Instant nextAfter = null;
     if (hasNext && !page.isEmpty()) {
       Article last = page.get(page.size() - 1);
-      nextCursor = buildCursor(last, request.orderBy());
+      nextCursor = buildCursor(last, condition.orderBy());
       nextAfter = last.getCreatedAt();
     }
 
     return CursorPageResponse.of(content, nextCursor, nextAfter, hasNext, content.size(), totalElements);
   }
 
-  private String buildCursor(Article article, String orderBy) {
+  private String buildCursor(Article article, ArticleOrderBy orderBy) {
     return switch (orderBy) {
-      case "publishDate" -> article.getPublishDate().toString();
-      case "commentCount" -> String.valueOf(article.getCommentCount());
-      case "viewCount" -> String.valueOf(article.getViewCount());
-      default -> throw ArticleInvalidSortFieldException.withOrderBy(orderBy);
+      case PUBLISH_DATE -> article.getPublishDate().toString();
+      case COMMENT_COUNT -> String.valueOf(article.getCommentCount());
+      case VIEW_COUNT -> String.valueOf(article.getViewCount());
     };
   }
 }
