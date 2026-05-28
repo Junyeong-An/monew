@@ -1,9 +1,12 @@
 package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,5 +42,19 @@ public class UserService {
     User saved = userRepository.save(user);
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
+  }
+
+  public UserResponse login(UserLoginRequest request) {
+    log.debug("로그인 시도");
+
+    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+
+    if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+      throw UserInvalidPasswordException.withoutDetail();
+    }
+
+    log.info("로그인 완료: id={}", user.getId());
+    return userMapper.toResponse(user);
   }
 }
