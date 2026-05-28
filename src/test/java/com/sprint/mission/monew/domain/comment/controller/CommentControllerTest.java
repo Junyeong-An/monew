@@ -66,7 +66,7 @@ public class CommentControllerTest {
 
   @Nested
   @DisplayName("댓글 등록하기")
-  class 댓글_등록하기 {
+  class CreateComment {
 
     @Test
     @DisplayName("댓글 등록 실패 - 뉴스 기사 ID Null(유효성 검증, 400 에러)")
