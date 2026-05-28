@@ -233,7 +233,7 @@ class ArticleServiceTest {
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, false);
       given(articleRepository.findById(article.getId())).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticleIdAndUserId(article.getId(), requestUserId))
+      given(articleViewRepository.existsByArticle_IdAndUserId(article.getId(), requestUserId))
           .willReturn(false);
       given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
 
@@ -278,7 +278,7 @@ class ArticleServiceTest {
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, true);
       given(articleRepository.findById(article.getId())).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticleIdAndUserId(article.getId(), requestUserId))
+      given(articleViewRepository.existsByArticle_IdAndUserId(article.getId(), requestUserId))
           .willReturn(true);
       given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
 

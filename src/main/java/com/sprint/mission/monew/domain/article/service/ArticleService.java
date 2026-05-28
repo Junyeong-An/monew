@@ -58,9 +58,9 @@ public class ArticleService {
 
   public ArticleResponse getArticle(UUID articleId, UUID requestUserId) {
     Article article = articleRepository.findById(articleId)
-        .filter(a -> a.getDeletedAt() == null)
+        .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
-    boolean viewedByMe = articleViewRepository.existsByArticleIdAndUserId(articleId, requestUserId);
+    boolean viewedByMe = articleViewRepository.existsByArticle_IdAndUserId(articleId, requestUserId);
     return articleMapper.toDto(article, viewedByMe);
   }
 

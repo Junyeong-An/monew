@@ -16,5 +16,5 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
   Set<UUID> findArticleIdsByArticleIdsAndUserId(
       @Param("articleIds") List<UUID> articleIds, @Param("userId") UUID userId);
 
-  boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
+  boolean existsByArticle_IdAndUserId(UUID articleId, UUID userId);
 }

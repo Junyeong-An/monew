@@ -42,7 +42,7 @@ public interface ArticleApi {
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);
 
-  @Operation(summary = "뉴스 기사 단건 조회", description = "ID로 뉴스 기사를 조회합니다.")
+  @Operation(summary = "뉴스 기사 단건 조회", description = "뉴스 기사 ID로 뉴스 기사 단건을 조회합니다.")
   @ApiResponses({
     @ApiResponse(
         responseCode = "200",
@@ -58,7 +58,7 @@ public interface ArticleApi {
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<ArticleResponse> getArticle(
-      @Parameter(description = "기사 ID") @PathVariable UUID articleId,
+      @Parameter(description = "뉴스 기사 ID") @PathVariable UUID articleId,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);
 }
