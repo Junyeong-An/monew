@@ -137,4 +137,54 @@ class ArticleIntegrationTest {
           .andExpect(jsonPath("$.content.length()").value(2));
     }
   }
+
+  @Nested
+  @DisplayName("GET /api/articles/{articleId} — 뉴스 기사 단건 조회")
+  class GetArticle {
+
+    @Test
+    @DisplayName("존재하는 기사를 조회하면 200과 기사 정보를 반환한다")
+    void 존재하는_기사를_조회하면_200과_기사_정보를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/1", "테스트 기사", Instant.now(), "요약"));
+
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(article.getId().toString()))
+          .andExpect(jsonPath("$.title").value("테스트 기사"))
+          .andExpect(jsonPath("$.source").value("NAVER"))
+          .andExpect(jsonPath("$.viewedByMe").value(false));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 articleId이면 404를 반환한다")
+    void 존재하지_않는_articleId이면_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", UUID.randomUUID())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("소프트딜리트된 기사를 조회하면 404를 반환한다")
+    void 소프트딜리트된_기사를_조회하면_404를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/deleted", "삭제된 기사",
+          Instant.now(), "요약"));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+  }
 }

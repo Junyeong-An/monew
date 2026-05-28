@@ -55,6 +55,10 @@ public class ArticleService {
     return CursorPageResponse.of(content, nextCursor, nextAfter, hasNext, content.size(), totalElements);
   }
 
+  public ArticleResponse getArticle(UUID articleId, UUID requestUserId) {
+    throw new UnsupportedOperationException("not implemented");
+  }
+
   private String buildCursor(Article article, ArticleOrderBy orderBy) {
     return switch (orderBy) {
       case PUBLISH_DATE -> article.getPublishDate().toString();
