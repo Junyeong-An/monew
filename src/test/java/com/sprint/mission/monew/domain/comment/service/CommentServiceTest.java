@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.dto.request.CommentCreateRequest;
@@ -80,7 +81,7 @@ public class CommentServiceTest {
     @DisplayName("댓글 등록 실패 - 사용자가 존재하지 않음")
     void 댓글_등록_실패_사용자_없음() {
       // given
-      Article article = new Article();
+      Article article = Article.create(ArticleSource.NAVER, "https://test.com", "테스트 기사", Instant.now(), null);
 
       given(articleRepository.findById(articleId)).willReturn(Optional.of(article));
       given(userRepository.findById(userId)).willReturn(Optional.empty());
@@ -94,7 +95,7 @@ public class CommentServiceTest {
     @DisplayName("댓글 등록_성공")
     void 댓글_등록_성공() {
       // given
-      Article article = new Article();
+      Article article = Article.create(ArticleSource.NAVER, "https://test.com", "테스트 기사", Instant.now(), null);
       User user = new User();
 
       CommentResponse expectedResponse = new CommentResponse(

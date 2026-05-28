@@ -3,7 +3,9 @@ package com.sprint.mission.monew.domain.comment.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.user.entity.User;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -18,7 +20,7 @@ public class CommentTest {
 
   @BeforeEach
   void setUp() {
-    article = new Article();
+    article = Article.create(ArticleSource.NAVER, "https://test.com", "테스트 기사", Instant.now(), null);
     user = new User();
     content = "댓글 내용";
 
