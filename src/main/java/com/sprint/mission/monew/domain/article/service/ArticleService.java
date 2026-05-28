@@ -3,9 +3,11 @@ package com.sprint.mission.monew.domain.article.service;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
+import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
+import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import java.time.Instant;
@@ -24,6 +26,7 @@ public class ArticleService {
   private final ArticleRepository articleRepository;
   private final ArticleViewRepository articleViewRepository;
   private final ArticleMapper articleMapper;
+  private final ArticleViewMapper articleViewMapper;
 
   public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition, UUID requestUserId) {
     long totalElements = articleRepository.count(condition);
@@ -60,5 +63,10 @@ public class ArticleService {
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
     boolean viewedByMe = articleViewRepository.existsByArticleIdAndUserId(articleId, requestUserId);
     return articleMapper.toResponse(article, viewedByMe);
+  }
+
+  @Transactional
+  public ArticleViewResponse registerView(UUID articleId, UUID userId) {
+    throw new UnsupportedOperationException("not implemented");
   }
 }

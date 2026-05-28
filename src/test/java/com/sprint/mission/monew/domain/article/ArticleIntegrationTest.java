@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.article;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -214,6 +215,82 @@ class ArticleIntegrationTest {
               .header(USER_ID_HEADER, userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.viewedByMe").value(true));
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /api/articles/{articleId}/article-views — 기사 조회수 등록")
+  class RegisterView {
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(post(URL + "/{articleId}/article-views", UUID.randomUUID()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 404를 반환한다")
+    void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(post(URL + "/{articleId}/article-views", UUID.randomUUID())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("소프트딜리트된 기사이면 404를 반환한다")
+    void 소프트딜리트된_기사이면_404를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/deleted", "삭제된 기사",
+          Instant.now(), "요약"));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when & then
+      mockMvc
+          .perform(post(URL + "/{articleId}/article-views", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 200과 ArticleViewResponse를 반환하고 viewCount가 증가한다")
+    void 정상_요청이면_200과_ArticleViewResponse를_반환하고_viewCount가_증가한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/1", "테스트 기사", Instant.now(), "요약"));
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      mockMvc
+          .perform(post(URL + "/{articleId}/article-views", article.getId())
+              .header(USER_ID_HEADER, userId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.articleId").value(article.getId().toString()))
+          .andExpect(jsonPath("$.viewedBy").value(userId.toString()))
+          .andExpect(jsonPath("$.articleViewCount").value(1));
+    }
+
+    @Test
+    @DisplayName("중복 조회이면 viewCount가 증가하지 않는다")
+    void 중복_조회이면_viewCount가_증가하지_않는다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/dup", "중복 기사", Instant.now(), "요약"));
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when & then
+      mockMvc
+          .perform(post(URL + "/{articleId}/article-views", article.getId())
+              .header(USER_ID_HEADER, userId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.articleViewCount").value(0));
     }
   }
 }
