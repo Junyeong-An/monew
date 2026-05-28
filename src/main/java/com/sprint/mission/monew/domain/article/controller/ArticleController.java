@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
 import jakarta.validation.Valid;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -26,18 +27,18 @@ public class ArticleController implements ArticleApi {
 
   private final ArticleService articleService;
 
-  @GetMapping("/sources")
-  @Override
-  public ResponseEntity<List<ArticleSource>> getSources() {
-    return ResponseEntity.ok(List.of(ArticleSource.values()));
-  }
-
   @GetMapping
   @Override
   public ResponseEntity<CursorPageResponse<ArticleResponse>> search(
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
     return ResponseEntity.ok(articleService.search(condition, requestUserId));
+  }
+
+  @GetMapping("/sources")
+  @Override
+  public ResponseEntity<List<ArticleSource>> getSources() {
+    return ResponseEntity.ok(Arrays.stream(ArticleSource.values()).toList());
   }
 
   @GetMapping("/{articleId}")

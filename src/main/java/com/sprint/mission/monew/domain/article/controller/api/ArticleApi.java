@@ -25,19 +25,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @Tag(name = "뉴스 기사 관리", description = "뉴스 기사 API")
 public interface ArticleApi {
 
-  @Operation(summary = "출처 목록 조회", description = "뉴스 기사 출처 목록을 조회합니다.")
-  @ApiResponses({
-    @ApiResponse(
-        responseCode = "200",
-        description = "조회 성공",
-        content = @Content(array = @ArraySchema(schema = @Schema(implementation = ArticleSource.class)))),
-    @ApiResponse(
-        responseCode = "500",
-        description = "서버 내부 오류",
-        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
-  })
-  ResponseEntity<List<ArticleSource>> getSources();
-
   @Operation(summary = "뉴스 기사 목록 조회", description = "조건에 맞는 뉴스 기사 목록을 조회합니다.")
   @ApiResponses({
     @ApiResponse(
@@ -57,6 +44,19 @@ public interface ArticleApi {
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);
+
+  @Operation(summary = "출처 목록 조회", description = "뉴스 기사 출처 목록을 조회합니다.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "조회 성공",
+        content = @Content(array = @ArraySchema(schema = @Schema(implementation = ArticleSource.class)))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "서버 내부 오류",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<List<ArticleSource>> getSources();
 
   @Operation(summary = "뉴스 기사 단건 조회", description = "뉴스 기사 ID로 뉴스 기사 단건을 조회합니다.")
   @ApiResponses({

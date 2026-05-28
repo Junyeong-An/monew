@@ -143,6 +143,23 @@ class ArticleIntegrationTest {
   }
 
   @Nested
+  @DisplayName("GET /api/articles/sources — 출처 목록 조회")
+  class GetSources {
+
+    @Test
+    @DisplayName("모든 출처 목록을 200으로 반환한다")
+    void 모든_출처_목록을_200으로_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/sources"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isArray())
+          .andExpect(jsonPath("$.length()").value(ArticleSource.values().length))
+          .andExpect(jsonPath("$", containsInAnyOrder("NAVER", "HANKYUNG", "CHOSUN", "YONHAP")));
+    }
+  }
+
+  @Nested
   @DisplayName("GET /api/articles/{articleId} — 뉴스 기사 단건 조회")
   class GetArticle {
 
@@ -215,23 +232,6 @@ class ArticleIntegrationTest {
               .header(USER_ID_HEADER, userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.viewedByMe").value(true));
-    }
-  }
-
-  @Nested
-  @DisplayName("GET /api/articles/sources — 출처 목록 조회")
-  class GetSources {
-
-    @Test
-    @DisplayName("모든 출처 목록을 200으로 반환한다")
-    void 모든_출처_목록을_200으로_반환한다() throws Exception {
-      // when & then
-      mockMvc
-          .perform(get(URL + "/sources"))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$").isArray())
-          .andExpect(jsonPath("$.length()").value(ArticleSource.values().length))
-          .andExpect(jsonPath("$", containsInAnyOrder("NAVER", "HANKYUNG", "CHOSUN", "YONHAP")));
     }
   }
 }
