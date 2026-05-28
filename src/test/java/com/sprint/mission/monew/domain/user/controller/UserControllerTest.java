@@ -40,7 +40,7 @@ class UserControllerTest {
 
   @Nested
   @DisplayName("POST /api/users — 회원가입")
-  class 회원가입 {
+  class Register {
 
     @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
