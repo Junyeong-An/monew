@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.article;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -139,6 +140,23 @@ class ArticleIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.hasNext").value(true))
           .andExpect(jsonPath("$.content.length()").value(2));
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/articles/sources — 출처 목록 조회")
+  class GetSources {
+
+    @Test
+    @DisplayName("모든 출처 목록을 200으로 반환한다")
+    void 모든_출처_목록을_200으로_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/sources"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$").isArray())
+          .andExpect(jsonPath("$.length()").value(ArticleSource.values().length))
+          .andExpect(jsonPath("$", containsInAnyOrder("NAVER", "HANKYUNG", "CHOSUN", "YONHAP")));
     }
   }
 
