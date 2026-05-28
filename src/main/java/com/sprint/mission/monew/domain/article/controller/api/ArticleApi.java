@@ -50,6 +50,10 @@ public interface ArticleApi {
         description = "조회 성공",
         content = @Content(schema = @Schema(implementation = ArticleResponse.class))),
     @ApiResponse(
+        responseCode = "400",
+        description = "잘못된 요청 (잘못된 articleId 형식, 헤더 누락 등)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
         responseCode = "404",
         description = "기사를 찾을 수 없음",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -69,6 +73,10 @@ public interface ArticleApi {
         responseCode = "200",
         description = "조회수 등록 성공",
         content = @Content(schema = @Schema(implementation = ArticleViewResponse.class))),
+    @ApiResponse(
+        responseCode = "400",
+        description = "잘못된 요청 (잘못된 articleId 형식, 헤더 누락 등)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
     @ApiResponse(
         responseCode = "404",
         description = "기사를 찾을 수 없음",
