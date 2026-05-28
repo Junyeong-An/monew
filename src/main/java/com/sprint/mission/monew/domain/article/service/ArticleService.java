@@ -5,6 +5,7 @@ import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
@@ -56,7 +57,11 @@ public class ArticleService {
   }
 
   public ArticleResponse getArticle(UUID articleId, UUID requestUserId) {
-    throw new UnsupportedOperationException("not implemented");
+    Article article = articleRepository.findById(articleId)
+        .filter(a -> a.getDeletedAt() == null)
+        .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
+    boolean viewedByMe = articleViewRepository.existsByArticleIdAndUserId(articleId, requestUserId);
+    return articleMapper.toDto(article, viewedByMe);
   }
 
   private String buildCursor(Article article, ArticleOrderBy orderBy) {
