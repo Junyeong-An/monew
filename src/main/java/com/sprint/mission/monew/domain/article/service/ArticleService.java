@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,7 +33,7 @@ public class ArticleService {
     boolean hasNext = articles.size() > condition.limit();
     List<Article> page = hasNext ? articles.subList(0, condition.limit()) : articles;
 
-    List<UUID> articleIds = page.stream().map(Article::getId).collect(Collectors.toList());
+    List<UUID> articleIds = page.stream().map(Article::getId).toList();
     Set<UUID> viewedIds =
         articleIds.isEmpty()
             ? Set.of()
@@ -43,7 +42,7 @@ public class ArticleService {
     List<ArticleResponse> content =
         page.stream()
             .map(a -> articleMapper.toDto(a, viewedIds.contains(a.getId())))
-            .collect(Collectors.toList());
+            .toList();
 
     String nextCursor = null;
     Instant nextAfter = null;

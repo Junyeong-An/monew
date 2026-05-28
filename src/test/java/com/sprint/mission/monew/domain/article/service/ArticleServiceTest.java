@@ -232,8 +232,8 @@ class ArticleServiceTest {
       ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, false);
-      given(articleRepository.findById(article.getId())).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticle_IdAndUserId(article.getId(), requestUserId))
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.existsByArticle_IdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(false);
       given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
 
@@ -249,7 +249,7 @@ class ArticleServiceTest {
     void 존재하지_않는_기사를_조회하면_ArticleNotFoundException을_던진다() {
       // given
       UUID articleId = UUID.randomUUID();
-      given(articleRepository.findById(articleId)).willReturn(Optional.empty());
+      given(articleRepository.findById(eq(articleId))).willReturn(Optional.empty());
 
       // when & then
       assertThatThrownBy(() -> articleService.getArticle(articleId, requestUserId))
@@ -262,7 +262,7 @@ class ArticleServiceTest {
       // given
       Article article = makeArticle(ArticleSource.NAVER);
       article.softDelete();
-      given(articleRepository.findById(article.getId())).willReturn(Optional.of(article));
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
 
       // when & then
       assertThatThrownBy(() -> articleService.getArticle(article.getId(), requestUserId))
@@ -277,8 +277,8 @@ class ArticleServiceTest {
       ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, true);
-      given(articleRepository.findById(article.getId())).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticle_IdAndUserId(article.getId(), requestUserId))
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.existsByArticle_IdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(true);
       given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
 

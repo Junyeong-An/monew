@@ -6,7 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
+import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +30,7 @@ class ArticleIntegrationTest {
 
   @Autowired MockMvc mockMvc;
   @Autowired ArticleRepository articleRepository;
+  @Autowired ArticleViewRepository articleViewRepository;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
@@ -168,6 +171,23 @@ class ArticleIntegrationTest {
           .perform(get(URL + "/{articleId}", UUID.randomUUID())
               .header(USER_ID_HEADER, UUID.randomUUID()))
           .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("이미 조회한 기사는 viewedByMe가 true이다")
+    void 이미_조회한_기사는_viewedByMe가_true이다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/viewed", "조회된 기사", Instant.now(), "요약"));
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, userId))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.viewedByMe").value(true));
     }
 
     @Test

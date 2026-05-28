@@ -144,7 +144,9 @@ class ArticleControllerTest {
           .perform(get(URL + "/{articleId}", articleId).header(USER_ID_HEADER, userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(articleId.toString()))
-          .andExpect(jsonPath("$.title").value("제목"));
+          .andExpect(jsonPath("$.title").value("제목"))
+          .andExpect(jsonPath("$.source").value("NAVER"))
+          .andExpect(jsonPath("$.viewedByMe").value(false));
     }
 
     @Test
