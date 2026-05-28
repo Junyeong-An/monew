@@ -231,26 +231,6 @@ class ArticleServiceTest {
   class GetArticle {
 
     @Test
-    @DisplayName("존재하는 기사를 조회하면 ArticleResponse를 반환한다")
-    void 존재하는_기사를_조회하면_ArticleResponse를_반환한다() {
-      // given
-      Article article = makeArticle(ArticleSource.NAVER);
-      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
-          article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
-          article.getSummary(), 0, 0, false);
-      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
-          .willReturn(false);
-      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
-
-      // when
-      ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
-
-      // then
-      assertThat(result).isEqualTo(dto);
-    }
-
-    @Test
     @DisplayName("존재하지 않는 기사를 조회하면 ArticleNotFoundException을 던진다")
     void 존재하지_않는_기사를_조회하면_ArticleNotFoundException을_던진다() {
       // given
@@ -273,6 +253,26 @@ class ArticleServiceTest {
       // when & then
       assertThatThrownBy(() -> articleService.getArticle(article.getId(), requestUserId))
           .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("존재하는 기사를 조회하면 ArticleResponse를 반환한다")
+    void 존재하는_기사를_조회하면_ArticleResponse를_반환한다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
+          article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
+          article.getSummary(), 0, 0, false);
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
+          .willReturn(false);
+      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
+
+      // when
+      ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
+
+      // then
+      assertThat(result).isEqualTo(dto);
     }
 
     @Test

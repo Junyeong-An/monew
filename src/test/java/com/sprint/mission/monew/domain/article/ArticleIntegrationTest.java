@@ -146,6 +146,42 @@ class ArticleIntegrationTest {
   class GetArticle {
 
     @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", UUID.randomUUID()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 articleId이면 404를 반환한다")
+    void 존재하지_않는_articleId이면_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", UUID.randomUUID())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("소프트딜리트된 기사를 조회하면 404를 반환한다")
+    void 소프트딜리트된_기사를_조회하면_404를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/deleted", "삭제된 기사",
+          Instant.now(), "요약"));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when & then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("존재하는 기사를 조회하면 200과 기사 정보를 반환한다")
     void 존재하는_기사를_조회하면_200과_기사_정보를_반환한다() throws Exception {
       // given
@@ -164,16 +200,6 @@ class ArticleIntegrationTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 articleId이면 404를 반환한다")
-    void 존재하지_않는_articleId이면_404를_반환한다() throws Exception {
-      // when & then
-      mockMvc
-          .perform(get(URL + "/{articleId}", UUID.randomUUID())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
-          .andExpect(status().isNotFound());
-    }
-
-    @Test
     @DisplayName("이미 조회한 기사는 viewedByMe가 true이다")
     void 이미_조회한_기사는_viewedByMe가_true이다() throws Exception {
       // given
@@ -188,23 +214,6 @@ class ArticleIntegrationTest {
               .header(USER_ID_HEADER, userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.viewedByMe").value(true));
-    }
-
-    @Test
-    @DisplayName("소프트딜리트된 기사를 조회하면 404를 반환한다")
-    void 소프트딜리트된_기사를_조회하면_404를_반환한다() throws Exception {
-      // given
-      Article article = articleRepository.save(Article.create(
-          ArticleSource.NAVER, "https://example.com/news/deleted", "삭제된 기사",
-          Instant.now(), "요약"));
-      article.softDelete();
-      articleRepository.save(article);
-
-      // when & then
-      mockMvc
-          .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
-          .andExpect(status().isNotFound());
     }
   }
 }
