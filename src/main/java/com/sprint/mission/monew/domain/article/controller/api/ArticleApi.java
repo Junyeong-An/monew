@@ -2,7 +2,7 @@ package com.sprint.mission.monew.domain.article.controller.api;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.article.dto.ArticleDto;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -36,7 +36,7 @@ public interface ArticleApi {
         description = "서버 내부 오류",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<CursorPageResponse<ArticleDto>> search(
+  ResponseEntity<CursorPageResponse<ArticleResponse>> search(
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);

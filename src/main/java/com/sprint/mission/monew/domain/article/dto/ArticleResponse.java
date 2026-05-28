@@ -4,7 +4,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import java.time.Instant;
 import java.util.UUID;
 
-public record ArticleDto(
+public record ArticleResponse(
     UUID id,
     ArticleSource source,
     String sourceUrl,

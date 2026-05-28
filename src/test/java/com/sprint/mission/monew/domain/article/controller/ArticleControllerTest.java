@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
-import com.sprint.mission.monew.domain.article.dto.ArticleDto;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
 import java.util.List;
 import java.util.UUID;
@@ -36,7 +36,7 @@ class ArticleControllerTest {
     @DisplayName("정상 요청이면 200과 CursorPageResponse를 반환한다")
     void 정상_요청이면_200과_CursorPageResponse를_반환한다() throws Exception {
       // given
-      CursorPageResponse<ArticleDto> response =
+      CursorPageResponse<ArticleResponse> response =
           CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
       given(articleService.search(any(), any(UUID.class))).willReturn(response);
 

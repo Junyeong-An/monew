@@ -2,7 +2,7 @@ package com.sprint.mission.monew.domain.article.controller;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.controller.api.ArticleApi;
-import com.sprint.mission.monew.domain.article.dto.ArticleDto;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
 import jakarta.validation.Valid;
@@ -25,7 +25,7 @@ public class ArticleController implements ArticleApi {
 
   @GetMapping
   @Override
-  public ResponseEntity<CursorPageResponse<ArticleDto>> search(
+  public ResponseEntity<CursorPageResponse<ArticleResponse>> search(
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
     return ResponseEntity.ok(articleService.search(condition, requestUserId));

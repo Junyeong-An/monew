@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.article.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
-import com.sprint.mission.monew.domain.article.dto.ArticleDto;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -26,7 +26,7 @@ public class ArticleService {
   private final ArticleViewRepository articleViewRepository;
   private final ArticleMapper articleMapper;
 
-  public CursorPageResponse<ArticleDto> search(ArticleQueryCondition condition, UUID requestUserId) {
+  public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition, UUID requestUserId) {
     long totalElements = articleRepository.count(condition);
     List<Article> articles = articleRepository.findAll(condition);
 
@@ -39,7 +39,7 @@ public class ArticleService {
             ? Set.of()
             : articleViewRepository.findArticleIdsByArticleIdsAndUserId(articleIds, requestUserId);
 
-    List<ArticleDto> content =
+    List<ArticleResponse> content =
         page.stream()
             .map(a -> articleMapper.toDto(a, viewedIds.contains(a.getId())))
             .collect(Collectors.toList());
