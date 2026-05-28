@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.article.repository;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,5 +19,5 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
 
   boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 
-  java.util.Optional<ArticleView> findByArticleIdAndUserId(UUID articleId, UUID userId);
+  Optional<ArticleView> findByArticleIdAndUserId(UUID articleId, UUID userId);
 }

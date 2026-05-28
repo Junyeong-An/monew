@@ -5,6 +5,7 @@ import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
@@ -67,6 +68,16 @@ public class ArticleService {
 
   @Transactional
   public ArticleViewResponse registerView(UUID articleId, UUID userId) {
-    throw new UnsupportedOperationException("not implemented");
+    Article article = articleRepository.findById(articleId)
+        .filter(a -> !a.isDeleted())
+        .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
+
+    return articleViewRepository.findByArticleIdAndUserId(articleId, userId)
+        .map(articleViewMapper::toResponse)
+        .orElseGet(() -> {
+          article.incrementViewCount();
+          ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
+          return articleViewMapper.toResponse(saved);
+        });
   }
 }

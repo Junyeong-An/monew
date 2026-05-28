@@ -8,6 +8,17 @@ import org.mapstruct.Mapper;
 public interface ArticleViewMapper {
 
   default ArticleViewResponse toResponse(ArticleView view) {
-    throw new UnsupportedOperationException("not implemented");
+    return new ArticleViewResponse(
+        view.getId(),
+        view.getUserId(),
+        view.getCreatedAt(),
+        view.getArticle().getId(),
+        view.getArticle().getSource(),
+        view.getArticle().getSourceUrl(),
+        view.getArticle().getTitle(),
+        view.getArticle().getPublishDate(),
+        view.getArticle().getSummary(),
+        view.getArticle().getCommentCount(),
+        view.getArticle().getViewCount());
   }
 }
