@@ -1,13 +1,19 @@
 package com.sprint.mission.monew.domain.article.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleInterest;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.exception.ArticleInvalidCursorException;
+import com.sprint.mission.monew.domain.interest.entity.Interest;
+import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +33,8 @@ import org.springframework.test.context.ActiveProfiles;
 class ArticleRepositoryTest {
 
   @Autowired ArticleRepository articleRepository;
+  @Autowired InterestRepository interestRepository;
+  @Autowired EntityManager em;
 
   @BeforeEach
   void setUp() {
@@ -348,6 +356,112 @@ class ArticleRepositoryTest {
 
       // then — viewCount=0은 cursor=0 이하가 아니므로 반환 안 됨
       assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT ASC cursor가 있으면 cursor 초과 기사만 반환한다")
+    void COMMENT_COUNT_ASC_cursor가_있으면_cursor_초과_기사만_반환한다() {
+      // given
+      saveArticle(ArticleSource.NAVER, "기사1");
+
+      // commentCount=0 > 10이면 포함 → 없음
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.COMMENT_COUNT, SortDirection.ASC,
+          "10", Instant.now().plusSeconds(86400), 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("VIEW_COUNT ASC cursor가 있으면 cursor 초과 기사만 반환한다")
+    void VIEW_COUNT_ASC_cursor가_있으면_cursor_초과_기사만_반환한다() {
+      // given
+      saveArticle(ArticleSource.NAVER, "기사1");
+
+      // viewCount=0 > 10이면 포함 → 없음
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
+          "10", Instant.now().plusSeconds(86400), 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("PUBLISH_DATE cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
+    void PUBLISH_DATE_cursor_파싱_불가_시_예외_발생() {
+      // given
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
+          "not-a-date", Instant.now(), 10);
+
+      // when & then
+      assertThatThrownBy(() -> articleRepository.findAll(condition))
+          .isInstanceOf(ArticleInvalidCursorException.class);
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
+    void COMMENT_COUNT_cursor_파싱_불가_시_예외_발생() {
+      // given
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
+          "not-a-number", Instant.now(), 10);
+
+      // when & then
+      assertThatThrownBy(() -> articleRepository.findAll(condition))
+          .isInstanceOf(ArticleInvalidCursorException.class);
+    }
+
+    @Test
+    @DisplayName("VIEW_COUNT cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
+    void VIEW_COUNT_cursor_파싱_불가_시_예외_발생() {
+      // given
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
+          "not-a-number", Instant.now(), 10);
+
+      // when & then
+      assertThatThrownBy(() -> articleRepository.findAll(condition))
+          .isInstanceOf(ArticleInvalidCursorException.class);
+    }
+
+    @Test
+    @DisplayName("interestId로 필터링하면 해당 관심사 연결 기사만 반환한다")
+    void interestId로_필터링하면_연결된_기사만_반환한다() {
+      // given
+      Interest interest = interestRepository.save(Interest.create("AI", List.of("AI")));
+      Article article1 = articleRepository.save(
+          Article.create(ArticleSource.NAVER, "url1", "AI 기사", Instant.now(), null));
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "url2", "일반 기사", Instant.now(), null));
+
+      em.persist(ArticleInterest.create(article1, interest));
+      em.flush();
+
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, interest.getId(), null, null, null,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
+          null, null, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).hasSize(1);
+      assertThat(result.get(0).getTitle()).isEqualTo("AI 기사");
     }
   }
 }

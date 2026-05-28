@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.SortDirection;
-import com.sprint.mission.monew.domain.article.dto.ArticleDto;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -64,7 +64,7 @@ class ArticleServiceTest {
       given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of());
 
       // when
-      CursorPageResponse<ArticleDto> result = articleService.search(defaultCondition, requestUserId);
+      CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
 
       // then
       assertThat(result.content()).isEmpty();
@@ -79,7 +79,7 @@ class ArticleServiceTest {
     void limit_이하의_결과는_hasNext가_false이다() {
       // given
       Article article = makeArticle(ArticleSource.NAVER);
-      ArticleDto dto = new ArticleDto(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
+      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
           article.getTitle(), article.getPublishDate(), article.getSummary(), 0, 0, false);
 
       given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(1L);
@@ -89,7 +89,7 @@ class ArticleServiceTest {
       given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
 
       // when
-      CursorPageResponse<ArticleDto> result = articleService.search(defaultCondition, requestUserId);
+      CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
 
       // then
       assertThat(result.content()).hasSize(1);
@@ -110,9 +110,9 @@ class ArticleServiceTest {
       Article article2 = makeArticle(ArticleSource.HANKYUNG);
       Article article3 = makeArticle(ArticleSource.CHOSUN); // 초과분
 
-      ArticleDto dto1 = new ArticleDto(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
+      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
           article1.getTitle(), article1.getPublishDate(), article1.getSummary(), 0, 0, false);
-      ArticleDto dto2 = new ArticleDto(article2.getId(), ArticleSource.HANKYUNG, article2.getSourceUrl(),
+      ArticleResponse dto2 = new ArticleResponse(article2.getId(), ArticleSource.HANKYUNG, article2.getSourceUrl(),
           article2.getTitle(), article2.getPublishDate(), article2.getSummary(), 0, 0, false);
 
       given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(3L);
@@ -124,7 +124,7 @@ class ArticleServiceTest {
       given(articleMapper.toDto(eq(article2), eq(false))).willReturn(dto2);
 
       // when
-      CursorPageResponse<ArticleDto> result = articleService.search(condition, requestUserId);
+      CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
 
       // then
       assertThat(result.content()).hasSize(2);
@@ -140,7 +140,7 @@ class ArticleServiceTest {
     void 요청자가_조회한_기사는_viewedByMe가_true이다() {
       // given
       Article article = makeArticle(ArticleSource.NAVER);
-      ArticleDto dto = new ArticleDto(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
+      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
           article.getTitle(), article.getPublishDate(), article.getSummary(), 0, 0, true);
 
       given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(1L);
@@ -150,11 +150,41 @@ class ArticleServiceTest {
       given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
 
       // when
-      CursorPageResponse<ArticleDto> result = articleService.search(defaultCondition, requestUserId);
+      CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
 
       // then
       assertThat(result.content()).hasSize(1);
       assertThat(result.content().get(0).viewedByMe()).isTrue();
+    }
+
+    @Test
+    @DisplayName("viewCount 기준 정렬 시 nextCursor가 viewCount 값 문자열이다")
+    void viewCount_기준_정렬_시_nextCursor가_viewCount_문자열이다() {
+      // given
+      int limit = 1;
+      ArticleQueryCondition condition =
+          new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.VIEW_COUNT,
+              SortDirection.DESC, null, null, limit);
+
+      Article article1 = makeArticle(ArticleSource.NAVER);
+      Article article2 = makeArticle(ArticleSource.HANKYUNG);
+      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER,
+          article1.getSourceUrl(), article1.getTitle(), article1.getPublishDate(),
+          article1.getSummary(), 0, 0, false);
+
+      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(2L);
+      given(articleRepository.findAll(any(ArticleQueryCondition.class)))
+          .willReturn(List.of(article1, article2));
+      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
+          .willReturn(Set.of());
+      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
+
+      // when
+      CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
+
+      // then — article1.viewCount = 0 (default)
+      assertThat(result.hasNext()).isTrue();
+      assertThat(result.nextCursor()).isEqualTo("0");
     }
 
     @Test
@@ -168,7 +198,7 @@ class ArticleServiceTest {
 
       Article article1 = makeArticle(ArticleSource.NAVER);
       Article article2 = makeArticle(ArticleSource.HANKYUNG); // 초과분
-      ArticleDto dto1 = new ArticleDto(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
+      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
           article1.getTitle(), article1.getPublishDate(), article1.getSummary(), 5, 0, false);
 
       given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(2L);
@@ -179,7 +209,7 @@ class ArticleServiceTest {
       given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
 
       // when
-      CursorPageResponse<ArticleDto> result = articleService.search(condition, requestUserId);
+      CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
 
       // then
       assertThat(result.hasNext()).isTrue();
