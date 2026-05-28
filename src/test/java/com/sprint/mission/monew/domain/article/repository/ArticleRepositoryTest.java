@@ -181,5 +181,173 @@ class ArticleRepositoryTest {
       assertThat(result).extracting(Article::getSource)
           .containsExactlyInAnyOrder(ArticleSource.NAVER, ArticleSource.HANKYUNG);
     }
+
+    @Test
+    @DisplayName("publishDateFrom이 있으면 그 이후 기사만 반환한다")
+    void publishDateFrom이_있으면_그_이후_기사만_반환한다() {
+      // given
+      Instant t1 = Instant.parse("2024-01-01T00:00:00Z");
+      Instant t2 = Instant.parse("2024-01-02T00:00:00Z");
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
+
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, t2, null,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
+          null, null, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).hasSize(1);
+      assertThat(result.get(0).getTitle()).isEqualTo("기사2");
+    }
+
+    @Test
+    @DisplayName("publishDateTo가 있으면 그 이전 기사만 반환한다")
+    void publishDateTo가_있으면_그_이전_기사만_반환한다() {
+      // given
+      Instant t1 = Instant.parse("2024-01-01T00:00:00Z");
+      Instant t2 = Instant.parse("2024-01-02T00:00:00Z");
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
+
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, t1,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
+          null, null, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).hasSize(1);
+      assertThat(result.get(0).getTitle()).isEqualTo("기사1");
+    }
+
+    @Test
+    @DisplayName("PUBLISH_DATE DESC cursor가 있으면 cursor 이전 기사만 반환한다")
+    void publishDate_DESC_cursor가_있으면_cursor_이전_기사만_반환한다() {
+      // given
+      Instant t1 = Instant.parse("2024-01-01T00:00:00Z");
+      Instant t2 = Instant.parse("2024-01-02T00:00:00Z");
+      Instant t3 = Instant.parse("2024-01-03T00:00:00Z");
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
+
+      // after=EPOCH → createdAt.lt(EPOCH)=false → 동일 publishDate 타이브레이크 제외
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
+          t3.toString(), Instant.EPOCH, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then — T1, T2만 반환 (T3는 cursor와 동일하고 타이브레이크 불충족)
+      assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("PUBLISH_DATE ASC cursor가 있으면 cursor 이후 기사만 반환한다")
+    void publishDate_ASC_cursor가_있으면_cursor_이후_기사만_반환한다() {
+      // given
+      Instant t1 = Instant.parse("2024-01-01T00:00:00Z");
+      Instant t2 = Instant.parse("2024-01-02T00:00:00Z");
+      Instant t3 = Instant.parse("2024-01-03T00:00:00Z");
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
+      articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
+
+      // after=미래 → createdAt.gt(미래)=false → T1 타이브레이크 제외
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.PUBLISH_DATE, SortDirection.ASC,
+          t1.toString(), Instant.now().plusSeconds(86400), 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then — T2, T3만 반환 (T1은 cursor와 동일하고 타이브레이크 불충족)
+      assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT 정렬로 기사 목록을 반환한다")
+    void COMMENT_COUNT_정렬로_기사_목록을_반환한다() {
+      // given
+      saveArticle(ArticleSource.NAVER, "기사1");
+      saveArticle(ArticleSource.HANKYUNG, "기사2");
+
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
+          null, null, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("VIEW_COUNT ASC 정렬로 기사 목록을 반환한다")
+    void VIEW_COUNT_ASC_정렬로_기사_목록을_반환한다() {
+      // given
+      saveArticle(ArticleSource.NAVER, "기사1");
+      saveArticle(ArticleSource.HANKYUNG, "기사2");
+
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
+          null, null, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then
+      assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT DESC cursor가 있으면 cursor 미만 기사만 반환한다")
+    void COMMENT_COUNT_DESC_cursor가_있으면_cursor_미만_기사만_반환한다() {
+      // given — commentCount=0인 기사 저장
+      saveArticle(ArticleSource.NAVER, "기사1");
+
+      // cursor="0", after=EPOCH → commentCount.lt(0)=false, 타이브레이크도 false
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
+          "0", Instant.EPOCH, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then — commentCount=0은 cursor=0 이하가 아니므로 반환 안 됨
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("VIEW_COUNT DESC cursor가 있으면 cursor 미만 기사만 반환한다")
+    void VIEW_COUNT_DESC_cursor가_있으면_cursor_미만_기사만_반환한다() {
+      // given — viewCount=0인 기사 저장
+      saveArticle(ArticleSource.NAVER, "기사1");
+
+      // cursor="0", after=EPOCH → viewCount.lt(0)=false, 타이브레이크도 false
+      ArticleQueryCondition condition = new ArticleQueryCondition(
+          null, null, null, null, null,
+          ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
+          "0", Instant.EPOCH, 10);
+
+      // when
+      List<Article> result = articleRepository.findAll(condition);
+
+      // then — viewCount=0은 cursor=0 이하가 아니므로 반환 안 됨
+      assertThat(result).isEmpty();
+    }
   }
 }
