@@ -2,7 +2,6 @@ package com.sprint.mission.monew.domain.article.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
-import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
@@ -41,14 +40,14 @@ public class ArticleService {
 
     List<ArticleResponse> content =
         page.stream()
-            .map(a -> articleMapper.toDto(a, viewedIds.contains(a.getId())))
+            .map(a -> articleMapper.toResponse(a, viewedIds.contains(a.getId())))
             .toList();
 
     String nextCursor = null;
     Instant nextAfter = null;
     if (hasNext && !page.isEmpty()) {
       Article last = page.get(page.size() - 1);
-      nextCursor = buildCursor(last, condition.orderBy());
+      nextCursor = articleRepository.buildCursor(last, condition.orderBy());
       nextAfter = last.getCreatedAt();
     }
 
@@ -59,15 +58,7 @@ public class ArticleService {
     Article article = articleRepository.findById(articleId)
         .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
-    boolean viewedByMe = articleViewRepository.existsByArticle_IdAndUserId(articleId, requestUserId);
-    return articleMapper.toDto(article, viewedByMe);
-  }
-
-  private String buildCursor(Article article, ArticleOrderBy orderBy) {
-    return switch (orderBy) {
-      case PUBLISH_DATE -> article.getPublishDate().toString();
-      case COMMENT_COUNT -> String.valueOf(article.getCommentCount());
-      case VIEW_COUNT -> String.valueOf(article.getViewCount());
-    };
+    boolean viewedByMe = articleViewRepository.existsByArticleIdAndUserId(articleId, requestUserId);
+    return articleMapper.toResponse(article, viewedByMe);
   }
 }

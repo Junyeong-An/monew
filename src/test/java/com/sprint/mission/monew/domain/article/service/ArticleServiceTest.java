@@ -89,7 +89,7 @@ class ArticleServiceTest {
       given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -123,8 +123,10 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2, article3));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
-      given(articleMapper.toDto(eq(article2), eq(false))).willReturn(dto2);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article2), eq(false))).willReturn(dto2);
+      given(articleRepository.buildCursor(eq(article2), eq(ArticleOrderBy.PUBLISH_DATE)))
+          .willReturn(article2.getPublishDate().toString());
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -150,7 +152,7 @@ class ArticleServiceTest {
       given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of(article.getId()));
-      given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(true))).willReturn(dto);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -180,7 +182,9 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.VIEW_COUNT)))
+          .willReturn("0");
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -209,7 +213,9 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.COMMENT_COUNT)))
+          .willReturn("0");
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -233,9 +239,9 @@ class ArticleServiceTest {
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, false);
       given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticle_IdAndUserId(eq(article.getId()), eq(requestUserId)))
+      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(false);
-      given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
 
       // when
       ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
@@ -278,9 +284,9 @@ class ArticleServiceTest {
           article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
           article.getSummary(), 0, 0, true);
       given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
-      given(articleViewRepository.existsByArticle_IdAndUserId(eq(article.getId()), eq(requestUserId)))
+      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(true);
-      given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(true))).willReturn(dto);
 
       // when
       ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
