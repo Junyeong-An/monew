@@ -314,6 +314,56 @@ class ArticleIntegrationTest {
   }
 
   @Nested
+  @DisplayName("DELETE /api/articles/{articleId}/hard — 뉴스 기사 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 404를 반환한다")
+    void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("논리 삭제된 기사도 물리 삭제하면 204를 반환한다")
+    void 논리_삭제된_기사도_물리_삭제하면_204를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/soft-deleted", "논리 삭제 기사",
+          Instant.now(), "요약"));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환하고 이후 단건 조회가 404를 반환한다")
+    void 정상_요청이면_204를_반환하고_이후_단건_조회가_404를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/1", "테스트 기사",
+          Instant.now(), "요약"));
+
+      // when
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .andExpect(status().isNoContent());
+
+      // then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+  }
+
+  @Nested
   @DisplayName("DELETE /api/articles/{articleId} — 뉴스 기사 논리 삭제")
   class SoftDelete {
 
