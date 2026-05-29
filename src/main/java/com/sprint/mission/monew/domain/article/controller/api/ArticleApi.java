@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -106,4 +107,19 @@ public interface ArticleApi {
       @Parameter(description = "뉴스 기사 ID") @PathVariable UUID articleId,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);
+
+  @Operation(summary = "뉴스 기사 논리 삭제", description = "뉴스 기사를 논리적으로 삭제합니다.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "논리 삭제 성공"),
+    @ApiResponse(
+        responseCode = "404",
+        description = "뉴스 기사 정보 없음",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "서버 내부 오류",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> softDelete(
+      @Parameter(description = "뉴스 기사 ID") @PathVariable UUID articleId);
 }
