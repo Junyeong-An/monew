@@ -10,9 +10,11 @@ import static org.mockito.Mockito.never;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
-import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
@@ -115,7 +117,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
-          .isInstanceOf(UserNotFoundException.class);
+          .isInstanceOf(UserLoginFailedException.class);
     }
 
     @Test
@@ -129,7 +131,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
-          .isInstanceOf(UserInvalidPasswordException.class);
+          .isInstanceOf(UserLoginFailedException.class);
     }
 
     @Test
@@ -151,6 +153,64 @@ class UserServiceTest {
       // then
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
+    }
+  }
+
+  @Nested
+  @DisplayName("닉네임 수정")
+  class Update {
+
+    private UUID userId;
+    private UUID requestUserId;
+    private UserUpdateRequest request;
+
+    @BeforeEach
+    void setUp() {
+      userId = UUID.randomUUID();
+      requestUserId = userId;
+      request = new UserUpdateRequest("새닉네임");
+    }
+
+    @Test
+    @DisplayName("다른 사용자가 수정하면 예외 발생")
+    void 다른_사용자가_수정하면_예외_발생() {
+      // given
+      UUID anotherUserId = UUID.randomUUID();
+
+      // when & then
+      assertThatThrownBy(() -> userService.update(userId, anotherUserId, request))
+          .isInstanceOf(UserAccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 예외 발생")
+    void 존재하지_않는_사용자면_예외_발생() {
+      // given
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.update(userId, requestUserId, request))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 수정된 사용자 반환")
+    void 성공_시_수정된_사용자_반환() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      UserResponse userResponse = new UserResponse(
+          userId, "test@test.com", "새닉네임", Instant.now()
+      );
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
+      given(userMapper.toResponse(user)).willReturn(userResponse);
+
+      // when
+      UserResponse result = userService.update(userId, requestUserId, request);
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.nickname()).isEqualTo("새닉네임");
     }
   }
 }
