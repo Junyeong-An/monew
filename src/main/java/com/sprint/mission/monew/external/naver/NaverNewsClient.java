@@ -52,6 +52,7 @@ public class NaverNewsClient {
     try {
       return ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
     } catch (Exception e) {
+      log.warn("Naver 기사 날짜 파싱 실패: pubDate={}", pubDate, e);
       return Instant.now();
     }
   }

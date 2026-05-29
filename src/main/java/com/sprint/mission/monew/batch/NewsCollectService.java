@@ -8,6 +8,7 @@ import com.sprint.mission.monew.external.naver.NaverNewsClient;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.rss.RssNewsParser;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,7 @@ public class NewsCollectService {
   }
 
   private void upsert(ArticleSource source, String sourceUrl, String title,
-      java.time.Instant publishDate, String summary) {
+      Instant publishDate, String summary) {
     articleRepository.findBySourceUrl(sourceUrl)
         .ifPresentOrElse(
             existing -> existing.update(title, summary),
