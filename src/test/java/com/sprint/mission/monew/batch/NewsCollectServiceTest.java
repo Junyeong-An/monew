@@ -82,8 +82,8 @@ class NewsCollectServiceTest {
       // when
       newsCollectService.collect();
 
-      // then
-      verify(articleRepository, never()).save(any());
+      // then — update 케이스: 기존 기사에 대해 save() 호출, 이벤트는 발행 안 함
+      verify(articleRepository).save(existing);
       verify(eventPublisher, never()).publishEvent(any());
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");

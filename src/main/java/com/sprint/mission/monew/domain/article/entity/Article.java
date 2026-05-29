@@ -21,7 +21,7 @@ public class Article extends BaseSoftDeletableEntity {
   @Column(nullable = false, length = 20)
   private ArticleSource source;
 
-  @Column(nullable = false, length = 2048)
+  @Column(nullable = false, unique = true, length = 2048)
   private String sourceUrl;
 
   @Column(nullable = false, length = 500)

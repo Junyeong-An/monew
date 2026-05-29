@@ -35,9 +35,9 @@ public class RssNewsParser {
       default -> throw new IllegalArgumentException("RSS 미지원 출처: " + source);
     };
 
-    try {
+    try (XmlReader reader = new XmlReader(new URL(url))) {
       SyndFeedInput input = new SyndFeedInput();
-      SyndFeed feed = input.build(new XmlReader(new URL(url)));
+      SyndFeed feed = input.build(reader);
       return feed.getEntries().stream()
           .filter(entry -> entry.getLink() != null && !entry.getLink().isBlank())
           .map(entry -> toDto(source, entry))

@@ -102,8 +102,8 @@ class NaverNewsClientTest {
     @Test
     @DisplayName("RFC 1123 형식 날짜 문자열을 Instant로 변환한다")
     void RFC_1123_날짜를_Instant로_변환한다() {
-      // given — +0900이면 UTC는 -9h → 2026-05-28T15:00:00Z
-      String pubDate = "Mon, 29 May 2026 00:00:00 +0900";
+      // given — 2026-05-29는 금요일, +0900이면 UTC는 -9h → 2026-05-28T15:00:00Z
+      String pubDate = "Fri, 29 May 2026 00:00:00 +0900";
 
       // when
       Instant result = NaverNewsClient.parseNaverDate(pubDate);

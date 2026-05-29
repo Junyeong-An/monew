@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -27,7 +28,8 @@ public class NewsCollectService {
   private final RssNewsParser rssNewsParser;
   private final ApplicationEventPublisher eventPublisher;
 
-  @Transactional
+  // 네트워크 호출이 포함되므로 트랜잭션 없이 실행, 각 upsert는 Spring Data 개별 트랜잭션으로 처리
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public void collect() {
     collectNaver();
     collectRss(ArticleSource.HANKYUNG);
@@ -39,12 +41,16 @@ public class NewsCollectService {
     try {
       List<NaverNewsItem> items = naverNewsClient.fetchNews();
       for (NaverNewsItem item : items) {
-        String sourceUrl = item.originallink() != null && !item.originallink().isBlank()
-            ? item.originallink() : item.link();
-        String title = NaverNewsClient.stripHtml(item.title());
-        String summary = NaverNewsClient.stripHtml(item.description());
-        upsert(ArticleSource.NAVER, sourceUrl, title,
-            NaverNewsClient.parseNaverDate(item.pubDate()), summary);
+        try {
+          String sourceUrl = item.originallink() != null && !item.originallink().isBlank()
+              ? item.originallink() : item.link();
+          String title = NaverNewsClient.stripHtml(item.title());
+          String summary = NaverNewsClient.stripHtml(item.description());
+          upsert(ArticleSource.NAVER, sourceUrl, title,
+              NaverNewsClient.parseNaverDate(item.pubDate()), summary);
+        } catch (Exception e) {
+          log.warn("Naver 기사 단건 처리 실패: link={}", item.link(), e);
+        }
       }
       log.info("Naver 뉴스 수집 완료: {}건", items.size());
     } catch (Exception e) {
@@ -56,7 +62,11 @@ public class NewsCollectService {
     try {
       List<RssArticleDto> items = rssNewsParser.parse(source);
       for (RssArticleDto item : items) {
-        upsert(item.source(), item.sourceUrl(), item.title(), item.publishDate(), item.summary());
+        try {
+          upsert(item.source(), item.sourceUrl(), item.title(), item.publishDate(), item.summary());
+        } catch (Exception e) {
+          log.warn("{} 기사 단건 처리 실패: url={}", source, item.sourceUrl(), e);
+        }
       }
       log.info("{} RSS 수집 완료: {}건", source, items.size());
     } catch (Exception e) {
@@ -72,7 +82,10 @@ public class NewsCollectService {
     }
     articleRepository.findBySourceUrl(sourceUrl)
         .ifPresentOrElse(
-            existing -> existing.update(title, summary),
+            existing -> {
+              existing.update(title, summary);
+              articleRepository.save(existing);
+            },
             () -> {
               Article saved = articleRepository.save(
                   Article.create(source, sourceUrl, title, publishDate, summary));
