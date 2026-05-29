@@ -2,6 +2,7 @@ package com.sprint.mission.monew.common.config;
 
 import com.sprint.mission.monew.common.interceptor.MdcLoggingInterceptor;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
+import com.sprint.mission.monew.domain.interest.dto.InterestOrderBy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
@@ -26,6 +27,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
       case "publishDate" -> ArticleOrderBy.PUBLISH_DATE;
       case "commentCount" -> ArticleOrderBy.COMMENT_COUNT;
       case "viewCount" -> ArticleOrderBy.VIEW_COUNT;
+      default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + value);
+    });
+
+    registry.addConverter(String.class, InterestOrderBy.class, value -> switch (value) {
+      case "name" -> InterestOrderBy.NAME;
+      case "subscriberCount" -> InterestOrderBy.SUBSCRIBER_COUNT;
       default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + value);
     });
   }

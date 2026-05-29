@@ -101,4 +101,15 @@ public class UserService {
     log.info("물리 삭제 완료: {}건 삭제", deleted);
     return deleted;
   }
+
+  @Transactional
+  public void hardDelete(UUID userId) {
+    log.debug("물리 삭제 시도");
+
+    User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    userRepository.delete(user);
+    log.info("물리 삭제 완료: id={}", userId);
+  }
 }

@@ -60,4 +60,19 @@ public interface NotificationApi {
   ResponseEntity<Void> confirm(
       @Parameter(description = "알림 ID") @PathVariable UUID notificationId,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID") UUID userId);
+
+  @Operation(summary = "알림 전체 확인", description = "사용자의 미확인 알림을 전체 확인 처리합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "알림 전체 확인 성공"),
+      @ApiResponse(
+          responseCode = "400",
+          description = "잘못된 요청 (헤더 누락 등)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(
+          responseCode = "500",
+          description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> confirmAll(
+      @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID") UUID userId);
 }

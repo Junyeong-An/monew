@@ -76,6 +76,33 @@ class NotificationControllerTest {
   }
 
   @Nested
+  @DisplayName("PATCH /api/notifications — 알림 전체 확인")
+  class ConfirmAllNotifications {
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
+    void 헤더가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(patch("/api/notifications"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("알림 전체 확인 성공 시 204를 반환한다")
+    void 알림_전체_확인_성공_시_204를_반환한다() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      mockMvc
+          .perform(patch("/api/notifications")
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNoContent());
+    }
+  }
+
+  @Nested
   @DisplayName("GET /api/notifications — 미확인 알림 목록 조회")
   class FindUnconfirmed {
 

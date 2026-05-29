@@ -2,8 +2,12 @@ package com.sprint.mission.monew.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.notification.dto.NotificationQueryCondition;
@@ -78,6 +82,29 @@ class NotificationServiceTest {
   }
 
   @Nested
+  @DisplayName("알림 전체 확인")
+  class ConfirmAll {
+
+    @Test
+    @DisplayName("repository.confirmAllByUserId에 위임한다")
+    void repository_confirmAllByUserId에_위임한다() {
+      // when
+      notificationService.confirmAll(userId);
+
+      // then
+      then(notificationRepository).should().confirmAllByUserId(any(UUID.class), any());
+    }
+
+    @Test
+    @DisplayName("알림이 없어도 예외 없이 동작한다")
+    void 알림이_없어도_예외_없이_동작한다() {
+      // when & then
+      org.junit.jupiter.api.Assertions.assertDoesNotThrow(
+          () -> notificationService.confirmAll(userId));
+    }
+  }
+
+  @Nested
   @DisplayName("미확인 알림 목록 조회")
   class FindUnconfirmed {
 
@@ -97,6 +124,27 @@ class NotificationServiceTest {
       // then
       assertThat(result).isEqualTo(expected);
       then(notificationRepository).should().findUnconfirmed(userId, condition);
+    }
+  }
+
+  @Nested
+  @DisplayName("만료 알림 일괄 삭제")
+  class DeleteExpiredNotifications {
+
+    @Test
+    @DisplayName("7일 경과 기준 cutoff로 repository.deleteConfirmedBefore에 위임한다")
+    void 만료_기준_cutoff로_repository_deleteConfirmedBefore에_위임한다() {
+      // given
+      Instant before = Instant.now();
+
+      // when
+      notificationService.deleteExpiredNotifications();
+
+      // then
+      Instant after = Instant.now();
+      then(notificationRepository).should().deleteConfirmedBefore(argThat(cutoff ->
+          !cutoff.isBefore(before.minus(7, ChronoUnit.DAYS))
+              && !cutoff.isAfter(after.minus(7, ChronoUnit.DAYS))));
     }
   }
 }

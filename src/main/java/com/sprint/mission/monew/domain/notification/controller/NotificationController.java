@@ -34,6 +34,15 @@ public class NotificationController implements NotificationApi {
   }
 
   @Override
+  @PatchMapping
+  public ResponseEntity<Void> confirmAll(
+      @RequestHeader("Monew-Request-User-ID") UUID userId
+  ) {
+    notificationService.confirmAll(userId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @Override
   @PatchMapping("/{notificationId}")
   public ResponseEntity<Void> confirm(
       @PathVariable UUID notificationId,

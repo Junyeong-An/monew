@@ -77,4 +77,15 @@ public class UserController implements UserApi {
     log.info("논리 삭제 성공: id={}", userId);
     return ResponseEntity.noContent().build();
   }
+
+  @DeleteMapping("/{userId}/hard")
+  @Override
+  public ResponseEntity<Void> hardDelete(@PathVariable UUID userId) {
+    log.debug("물리 삭제 요청 수신");
+
+    userService.hardDelete(userId);
+
+    log.info("물리 삭제 성공: id={}", userId);
+    return ResponseEntity.noContent().build();
+  }
 }
