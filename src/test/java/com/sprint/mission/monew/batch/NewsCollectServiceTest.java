@@ -114,6 +114,45 @@ class NewsCollectServiceTest {
     }
 
     @Test
+    @DisplayName("RSS 출처 수집 실패 시 다른 출처는 계속 수집한다")
+    void RSS_출처_실패_시_다른_출처는_계속_수집한다() {
+      // given
+      RssArticleDto rssItem = new RssArticleDto(
+          ArticleSource.CHOSUN, "https://chosun.com/1", "조선 기사", Instant.now(), "요약");
+      Article saved = Article.create(
+          ArticleSource.CHOSUN, "https://chosun.com/1", "조선 기사", Instant.now(), "요약");
+
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.HANKYUNG))).willThrow(new RuntimeException("RSS 오류"));
+      given(rssNewsParser.parse(eq(ArticleSource.CHOSUN))).willReturn(List.of(rssItem));
+      given(rssNewsParser.parse(eq(ArticleSource.YONHAP))).willReturn(List.of());
+      given(articleRepository.findBySourceUrl("https://chosun.com/1")).willReturn(Optional.empty());
+      given(articleRepository.save(any(Article.class))).willReturn(saved);
+
+      // when & then — 예외 없이 완료, CHOSUN 기사는 저장
+      assertThatNoException().isThrownBy(() -> newsCollectService.collect());
+      verify(articleRepository).save(any(Article.class));
+    }
+
+    @Test
+    @DisplayName("sourceUrl이 null인 기사는 저장하지 않는다")
+    void sourceUrl이_null인_기사는_저장하지_않는다() {
+      // given — originallink, link 모두 null → sourceUrl = null
+      NaverNewsItem item = new NaverNewsItem("제목", null, null, "요약",
+          "Mon, 25 May 2026 09:00:00 +0900");
+
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleRepository, never()).save(any());
+      verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
     @DisplayName("한 출처 수집 실패 시 다른 출처는 계속 수집한다")
     void 한_출처_실패_시_다른_출처는_계속_수집한다() {
       // given
