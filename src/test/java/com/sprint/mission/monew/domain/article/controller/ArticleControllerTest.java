@@ -4,7 +4,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -298,7 +297,6 @@ class ArticleControllerTest {
     void 정상_요청이면_204를_반환한다() throws Exception {
       // given
       UUID articleId = UUID.randomUUID();
-      willDoNothing().given(articleService).softDelete(eq(articleId));
 
       // when & then
       mockMvc
