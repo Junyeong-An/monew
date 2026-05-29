@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.external.naver;
 
+import com.sprint.mission.monew.common.util.HtmlUtils;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsResponse;
 import java.time.Instant;
@@ -58,12 +59,6 @@ public class NaverNewsClient {
   }
 
   public static String stripHtml(String html) {
-    if (html == null) return "";
-    return html.replaceAll("<[^>]*>", "")
-        .replace("&quot;", "\"")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .trim();
+    return HtmlUtils.strip(html);
   }
 }

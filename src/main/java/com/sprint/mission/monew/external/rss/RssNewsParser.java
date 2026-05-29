@@ -4,6 +4,7 @@ import com.rometools.rome.feed.synd.SyndEntry;
 import com.rometools.rome.feed.synd.SyndFeed;
 import com.rometools.rome.io.SyndFeedInput;
 import com.rometools.rome.io.XmlReader;
+import com.sprint.mission.monew.common.util.HtmlUtils;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
 import java.net.URL;
@@ -38,6 +39,7 @@ public class RssNewsParser {
       SyndFeedInput input = new SyndFeedInput();
       SyndFeed feed = input.build(new XmlReader(new URL(url)));
       return feed.getEntries().stream()
+          .filter(entry -> entry.getLink() != null && !entry.getLink().isBlank())
           .map(entry -> toDto(source, entry))
           .toList();
     } catch (Exception e) {
@@ -47,24 +49,14 @@ public class RssNewsParser {
   }
 
   private RssArticleDto toDto(ArticleSource source, SyndEntry entry) {
-    String title = stripHtml(entry.getTitle());
+    String title = HtmlUtils.strip(entry.getTitle());
     String sourceUrl = entry.getLink();
     Instant publishDate = entry.getPublishedDate() != null
         ? entry.getPublishedDate().toInstant()
         : Instant.now();
     String summary = entry.getDescription() != null
-        ? stripHtml(entry.getDescription().getValue())
+        ? HtmlUtils.strip(entry.getDescription().getValue())
         : "";
     return new RssArticleDto(source, sourceUrl, title, publishDate, summary);
-  }
-
-  private String stripHtml(String html) {
-    if (html == null) return "";
-    return html.replaceAll("<[^>]*>", "")
-        .replace("&quot;", "\"")
-        .replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .trim();
   }
 }

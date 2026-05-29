@@ -66,6 +66,10 @@ public class NewsCollectService {
 
   private void upsert(ArticleSource source, String sourceUrl, String title,
       Instant publishDate, String summary) {
+    if (sourceUrl == null || sourceUrl.isBlank()) {
+      log.warn("sourceUrl이 없어 기사를 건너뜁니다: title={}", title);
+      return;
+    }
     articleRepository.findBySourceUrl(sourceUrl)
         .ifPresentOrElse(
             existing -> existing.update(title, summary),

@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.batch;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -84,6 +85,8 @@ class NewsCollectServiceTest {
       // then
       verify(articleRepository, never()).save(any());
       verify(eventPublisher, never()).publishEvent(any());
+      assertThat(existing.getTitle()).isEqualTo("수정된 제목");
+      assertThat(existing.getSummary()).isEqualTo("수정된 요약");
     }
 
     @Test
