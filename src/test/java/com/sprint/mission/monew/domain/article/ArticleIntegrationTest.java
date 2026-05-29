@@ -12,6 +12,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ class ArticleIntegrationTest {
   @Autowired MockMvc mockMvc;
   @Autowired ArticleRepository articleRepository;
   @Autowired ArticleViewRepository articleViewRepository;
+  @Autowired EntityManager em;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
@@ -360,6 +362,28 @@ class ArticleIntegrationTest {
           .perform(get(URL + "/{articleId}", article.getId())
               .header(USER_ID_HEADER, UUID.randomUUID()))
           .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("물리 삭제 시 연관된 ArticleView도 함께 삭제된다")
+    void 물리_삭제_시_연관된_ArticleView도_함께_삭제된다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/cascade", "cascade 기사",
+          Instant.now(), "요약"));
+      UUID articleId = article.getId();
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .andExpect(status().isNoContent());
+
+      // then — 삭제 후 세션 초기화: delete된 Article을 참조하는 ArticleView가 세션에 남아 flush 충돌 방지
+      em.clear();
+      boolean viewExists = articleViewRepository.existsByArticleIdAndUserId(articleId, userId);
+      org.assertj.core.api.Assertions.assertThat(viewExists).isFalse();
     }
   }
 
