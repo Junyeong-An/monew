@@ -4,9 +4,10 @@ import com.sprint.mission.monew.common.util.HtmlUtils;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsResponse;
 import java.time.Instant;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,10 @@ public class NaverNewsClient {
 
   private static final String NEWS_URL =
       "https://openapi.naver.com/v1/search/news.json?query={query}&display={display}&sort=date";
+
+  // "dd MMM yyyy HH:mm:ss Z" — 요일 접두어는 파싱 전에 제거해 검증 오류 방지
+  private static final DateTimeFormatter NAVER_DATE_FORMATTER =
+      DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 
   private final RestClient restClient;
 
@@ -50,8 +55,14 @@ public class NaverNewsClient {
   }
 
   public static Instant parseNaverDate(String pubDate) {
+    if (pubDate == null) {
+      log.warn("Naver 기사 날짜가 null입니다");
+      return Instant.now();
+    }
     try {
-      return ZonedDateTime.parse(pubDate, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+      // "Mon, 29 May 2026 ..." → "29 May 2026 ..." (요일 부분 제거)
+      String dateStr = pubDate.contains(",") ? pubDate.substring(pubDate.indexOf(',') + 2) : pubDate;
+      return OffsetDateTime.parse(dateStr, NAVER_DATE_FORMATTER).toInstant();
     } catch (Exception e) {
       log.warn("Naver 기사 날짜 파싱 실패: pubDate={}", pubDate, e);
       return Instant.now();
