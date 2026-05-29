@@ -11,6 +11,8 @@ import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,5 +77,28 @@ public class UserService {
     user.updateNickname(request.nickname());
     log.info("닉네임 수정 완료: id={}", userId);
     return userMapper.toResponse(user);
+  }
+
+  @Transactional
+  public void delete(UUID userId, UUID requestUserId) {
+    log.debug("논리 삭제 시도");
+
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    user.softDelete();
+    log.info("논리 삭제 완료: id={}", userId);
+  }
+
+  @Transactional
+  public int deleteExpiredUsers(Instant threshold) {
+    log.info("물리 삭제 실행: threshold={}", threshold);
+    int deleted = userRepository.deleteAllByDeletedAtBefore(threshold);
+    log.info("물리 삭제 완료: {}건 삭제", deleted);
+    return deleted;
   }
 }
