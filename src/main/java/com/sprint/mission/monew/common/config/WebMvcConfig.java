@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.common.config;
 
+import com.sprint.mission.monew.common.exception.InvalidOrderByException;
 import com.sprint.mission.monew.common.interceptor.MdcLoggingInterceptor;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.interest.dto.InterestOrderBy;
@@ -27,13 +28,15 @@ public class WebMvcConfig implements WebMvcConfigurer {
       case "publishDate" -> ArticleOrderBy.PUBLISH_DATE;
       case "commentCount" -> ArticleOrderBy.COMMENT_COUNT;
       case "viewCount" -> ArticleOrderBy.VIEW_COUNT;
-      default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + value);
+      default ->
+          throw new InvalidOrderByException(value, ArticleOrderBy.class, "지원하는 정렬 기준이 아닙니다.");
     });
 
     registry.addConverter(String.class, InterestOrderBy.class, value -> switch (value) {
       case "name" -> InterestOrderBy.NAME;
       case "subscriberCount" -> InterestOrderBy.SUBSCRIBER_COUNT;
-      default -> throw new IllegalArgumentException("지원하지 않는 정렬 기준: " + value);
+      default ->
+          throw new InvalidOrderByException(value, InterestOrderBy.class, "지원하는 정렬 기준이 아닙니다.");
     });
   }
 }
