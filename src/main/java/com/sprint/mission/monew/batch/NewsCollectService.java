@@ -58,7 +58,7 @@ public class NewsCollectService {
       for (RssArticleDto item : items) {
         try {
           articleUpsertService.upsert(
-              item.source(), item.sourceUrl(), item.title(), item.publishDate(), item.summary());
+              source, item.sourceUrl(), item.title(), item.publishDate(), item.summary());
         } catch (Exception e) {
           log.warn("{} 기사 단건 처리 실패: url={}", source, item.sourceUrl(), e);
         }
