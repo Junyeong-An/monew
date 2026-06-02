@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
@@ -106,9 +107,9 @@ class NewsCollectServiceTest {
     }
 
     @Test
-    @DisplayName("sourceUrl이 null인 Naver 기사는 upsert를 호출하지 않는다")
-    void sourceUrl이_null인_기사는_upsert를_호출하지_않는다() {
-      // given — originallink, link 모두 null
+    @DisplayName("originallink·link 모두 null인 Naver 기사는 null sourceUrl로 upsert를 호출한다")
+    void originallink_link_모두_null인_기사는_null_sourceUrl로_upsert를_호출한다() {
+      // given — originallink, link 모두 null → sourceUrl = null (skip은 ArticleUpsertService 내부 처리)
       NaverNewsItem item = new NaverNewsItem("제목", null, null, "요약",
           "Mon, 29 May 2026 00:00:00 +0900");
       given(naverNewsClient.fetchNews()).willReturn(List.of(item));
@@ -117,8 +118,52 @@ class NewsCollectServiceTest {
       // when
       newsCollectService.collect();
 
-      // then — sourceUrl=null이어도 upsert는 호출되나 내부에서 skip
+      // then
       verify(articleUpsertService).upsert(eq(ArticleSource.NAVER), eq(null), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Naver 기사 단건 처리 실패 시 같은 출처의 다른 기사는 계속 처리한다")
+    void Naver_기사_단건_처리_실패_시_다른_기사는_계속_처리한다() {
+      // given
+      NaverNewsItem item1 = new NaverNewsItem(
+          "제목1", "https://example.com/1", "https://example.com/1",
+          "요약1", "Mon, 29 May 2026 00:00:00 +0900");
+      NaverNewsItem item2 = new NaverNewsItem(
+          "제목2", "https://example.com/2", "https://example.com/2",
+          "요약2", "Mon, 29 May 2026 00:00:00 +0900");
+
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item1, item2));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+      willThrow(new RuntimeException("저장 실패"))
+          .given(articleUpsertService).upsert(eq(ArticleSource.NAVER), eq("https://example.com/1"), any(), any(), any());
+
+      // when & then — 예외 없이 완료, 두 번째 기사도 upsert 호출됨
+      assertThatNoException().isThrownBy(() -> newsCollectService.collect());
+      verify(articleUpsertService).upsert(
+          eq(ArticleSource.NAVER), eq("https://example.com/2"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("RSS 기사 단건 처리 실패 시 같은 출처의 다른 기사는 계속 처리한다")
+    void RSS_기사_단건_처리_실패_시_다른_기사는_계속_처리한다() {
+      // given
+      RssArticleDto item1 = new RssArticleDto(
+          ArticleSource.HANKYUNG, "https://hankyung.com/1", "기사1", Instant.now(), "요약1");
+      RssArticleDto item2 = new RssArticleDto(
+          ArticleSource.HANKYUNG, "https://hankyung.com/2", "기사2", Instant.now(), "요약2");
+
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.HANKYUNG))).willReturn(List.of(item1, item2));
+      given(rssNewsParser.parse(eq(ArticleSource.CHOSUN))).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.YONHAP))).willReturn(List.of());
+      willThrow(new RuntimeException("저장 실패"))
+          .given(articleUpsertService).upsert(eq(ArticleSource.HANKYUNG), eq("https://hankyung.com/1"), any(), any(), any());
+
+      // when & then — 두 번째 기사도 upsert 호출됨
+      assertThatNoException().isThrownBy(() -> newsCollectService.collect());
+      verify(articleUpsertService).upsert(
+          eq(ArticleSource.HANKYUNG), eq("https://hankyung.com/2"), any(), any(), any());
     }
   }
 }
