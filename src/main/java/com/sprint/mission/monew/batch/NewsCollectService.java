@@ -83,6 +83,10 @@ public class NewsCollectService {
     articleRepository.findBySourceUrl(sourceUrl)
         .ifPresentOrElse(
             existing -> {
+              if (existing.isDeleted()) {
+                log.debug("소프트 삭제된 기사 건너뜁니다: sourceUrl={}", sourceUrl);
+                return;
+              }
               existing.update(title, summary);
               articleRepository.save(existing);
             },
