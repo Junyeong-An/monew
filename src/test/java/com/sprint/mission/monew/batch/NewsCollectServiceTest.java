@@ -153,6 +153,31 @@ class NewsCollectServiceTest {
     }
 
     @Test
+    @DisplayName("소프트 삭제된 기사는 갱신하지 않고 건너뛴다")
+    void 소프트_삭제된_기사는_갱신하지_않고_건너뛴다() {
+      // given
+      NaverNewsItem item = new NaverNewsItem(
+          "새 제목", "https://example.com/1", "https://example.com/1",
+          "새 요약", "Mon, 29 May 2026 00:00:00 +0900");
+      Article deleted = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "원래 제목", Instant.now(), "원래 요약");
+      deleted.softDelete();
+
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+      given(articleRepository.findBySourceUrl("https://example.com/1"))
+          .willReturn(Optional.of(deleted));
+
+      // when
+      newsCollectService.collect();
+
+      // then — 소프트 삭제된 기사는 save 미호출, 내용 불변
+      verify(articleRepository, never()).save(any());
+      verify(eventPublisher, never()).publishEvent(any());
+      assertThat(deleted.getTitle()).isEqualTo("원래 제목");
+    }
+
+    @Test
     @DisplayName("한 출처 수집 실패 시 다른 출처는 계속 수집한다")
     void 한_출처_실패_시_다른_출처는_계속_수집한다() {
       // given
