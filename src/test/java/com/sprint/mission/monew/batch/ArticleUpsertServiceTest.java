@@ -127,8 +127,12 @@ class ArticleUpsertServiceTest {
       // when
       articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(first, second));
 
-      // then — saveAll은 1건만, 이벤트도 1번만
-      verify(articleRepository).saveAll(argThat((List<Article> list) -> list.size() == 1));
+      // then — saveAll은 1건만(first-seen 기준), title·summary도 첫 번째 candidate 값
+      verify(articleRepository).saveAll(argThat((List<Article> list) ->
+          list.size() == 1
+              && list.get(0).getSourceUrl().equals("https://example.com/1")
+              && list.get(0).getTitle().equals("첫 번째 제목")
+              && list.get(0).getSummary().equals("첫 번째 요약")));
       verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
       verify(newsCollectMetrics).countCreated();
     }
