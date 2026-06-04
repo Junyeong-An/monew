@@ -73,9 +73,14 @@ public class NewsCollectService {
     try {
       List<RssArticleDto> items = rssNewsParser.parse(source);
       List<ArticleCandidate> candidates = items.stream()
+          .filter(item -> item.sourceUrl() != null && !item.sourceUrl().isBlank())
           .map(item -> new ArticleCandidate(
               item.sourceUrl(), item.title(), item.publishDate(), item.summary()))
           .toList();
+      if (candidates.size() != items.size()) {
+        log.warn("{} RSS 기사 중 sourceUrl 누락 항목 {}건을 건너뜁니다",
+            source, items.size() - candidates.size());
+      }
       articleUpsertService.upsertAll(source, candidates);
       newsCollectMetrics.countCollected(source, candidates.size());
       log.info("{} RSS 수집 완료: {}건", source, candidates.size());

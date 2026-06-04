@@ -177,5 +177,23 @@ class NewsCollectServiceTest {
       // then — candidates가 비어있으므로 upsertAll에 빈 목록이 전달됨
       verify(articleUpsertService).upsertAll(eq(ArticleSource.NAVER), argThat(List::isEmpty));
     }
+
+    @Test
+    @DisplayName("RSS sourceUrl이 null인 기사는 candidates에 포함하지 않고 건너뛴다")
+    void RSS_sourceUrl이_null인_기사는_건너뛴다() {
+      // given — sourceUrl null인 RSS 항목 → filter에서 제거
+      RssArticleDto nullUrlItem = new RssArticleDto(
+          ArticleSource.HANKYUNG, null, "기사 제목", Instant.now(), "요약");
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.HANKYUNG))).willReturn(List.of(nullUrlItem));
+      given(rssNewsParser.parse(eq(ArticleSource.CHOSUN))).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.YONHAP))).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then — candidates가 비어있으므로 upsertAll에 빈 목록이 전달됨
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.HANKYUNG), argThat(List::isEmpty));
+    }
   }
 }

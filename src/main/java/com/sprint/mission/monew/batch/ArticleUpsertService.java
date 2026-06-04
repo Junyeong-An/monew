@@ -5,6 +5,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.event.ArticleCreatedEvent;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -28,15 +29,24 @@ public class ArticleUpsertService {
   // 출처별 기사 목록을 한 번의 SELECT + saveAll로 일괄 처리해 DB 왕복 비용을 최소화
   @Transactional
   public void upsertAll(ArticleSource source, List<ArticleCandidate> candidates) {
-    if (candidates.isEmpty()) {
+    // null/blank 제거 후 동일 URL 중복 제거 (first-seen 우선, LinkedHashMap으로 순서 보존)
+    Map<String, ArticleCandidate> deduped = candidates.stream()
+        .filter(c -> c.sourceUrl() != null && !c.sourceUrl().isBlank())
+        .collect(Collectors.toMap(
+            ArticleCandidate::sourceUrl,
+            Function.identity(),
+            (a, b) -> a,
+            LinkedHashMap::new));
+
+    if (deduped.isEmpty()) {
       return;
     }
-    List<String> urls = candidates.stream().map(ArticleCandidate::sourceUrl).toList();
-    Map<String, Article> existing = articleRepository.findBySourceUrlIn(urls).stream()
+
+    Map<String, Article> existing = articleRepository.findBySourceUrlIn(new ArrayList<>(deduped.keySet())).stream()
         .collect(Collectors.toMap(Article::getSourceUrl, Function.identity(), (a, b) -> a));
 
     List<Article> toCreate = new ArrayList<>();
-    for (ArticleCandidate c : candidates) {
+    for (ArticleCandidate c : deduped.values()) {
       Article article = existing.get(c.sourceUrl());
       if (article == null) {
         toCreate.add(Article.create(source, c.sourceUrl(), c.title(), c.publishDate(), c.summary()));

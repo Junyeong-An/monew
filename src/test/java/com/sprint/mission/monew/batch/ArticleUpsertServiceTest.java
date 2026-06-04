@@ -3,6 +3,7 @@ package com.sprint.mission.monew.batch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -107,6 +108,29 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("동일 sourceUrl 중복 candidates는 first-seen 하나만 저장한다")
+    void 동일_sourceUrl_중복_candidates는_하나만_저장한다() {
+      // given — 같은 URL 2건 → dedup 후 1건만 saveAll
+      ArticleCandidate first = new ArticleCandidate(
+          "https://example.com/1", "첫 번째 제목", Instant.now(), "첫 번째 요약");
+      ArticleCandidate second = new ArticleCandidate(
+          "https://example.com/1", "두 번째 제목", Instant.now(), "두 번째 요약");
+      Article saved = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "첫 번째 제목", Instant.now(), "첫 번째 요약");
+      given(articleRepository.findBySourceUrlIn(List.of("https://example.com/1")))
+          .willReturn(List.of());
+      given(articleRepository.saveAll(anyList())).willReturn(List.of(saved));
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(first, second));
+
+      // then — saveAll은 1건만, 이벤트도 1번만
+      verify(articleRepository).saveAll(argThat((List<Article> list) -> list.size() == 1));
+      verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
+      verify(newsCollectMetrics).countCreated();
     }
   }
 }
