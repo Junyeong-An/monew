@@ -16,9 +16,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -68,21 +70,26 @@ public class ArticleService {
 
   @Transactional
   public void hardDelete(UUID articleId) {
+    log.debug("기사 물리 삭제 시작 | articleId={}", articleId);
     Article article = articleRepository.findById(articleId)
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
     articleRepository.delete(article);
+    log.info("기사 물리 삭제 완료 | articleId={}", articleId);
   }
 
   @Transactional
   public void softDelete(UUID articleId) {
+    log.debug("기사 논리 삭제 시작 | articleId={}", articleId);
     Article article = articleRepository.findById(articleId)
         .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
     article.softDelete();
+    log.info("기사 논리 삭제 완료 | articleId={}", articleId);
   }
 
   @Transactional
   public ArticleViewResponse registerView(UUID articleId, UUID userId) {
+    log.debug("기사 조회 등록 시작 | articleId={}, userId={}", articleId, userId);
     Article article = articleRepository.findById(articleId)
         .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
@@ -92,6 +99,7 @@ public class ArticleService {
         .orElseGet(() -> {
           article.incrementViewCount();
           ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
+          log.info("기사 조회 등록 완료 | articleId={}, userId={}", articleId, userId);
           return articleViewMapper.toResponse(saved);
         });
   }

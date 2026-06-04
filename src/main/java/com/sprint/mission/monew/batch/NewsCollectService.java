@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.interest.service.InterestNotificationService;
 import com.sprint.mission.monew.external.naver.NaverNewsClient;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.rss.RssNewsParser;
@@ -26,10 +27,12 @@ public class NewsCollectService {
   private final NaverNewsClient naverNewsClient;
   private final RssNewsParser rssNewsParser;
   private final NewsCollectMetrics newsCollectMetrics;
+  private final InterestNotificationService interestNotificationService;
 
   // 네트워크 호출이 포함되므로 트랜잭션 없이 실행, upsertAll은 ArticleUpsertService의 @Transactional로 처리
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public void collect() {
+    Instant batchStartTime = Instant.now();
     long start = System.nanoTime();
     try {
       collectNaver();
@@ -39,6 +42,7 @@ public class NewsCollectService {
     } finally {
       newsCollectMetrics.recordCollectDuration(Duration.ofNanos(System.nanoTime() - start));
     }
+    interestNotificationService.notifyNewArticles(batchStartTime);
   }
 
   private void collectNaver() {
@@ -63,7 +67,7 @@ public class NewsCollectService {
       }
       articleUpsertService.upsertAll(ArticleSource.NAVER, candidates);
       newsCollectMetrics.countCollected(ArticleSource.NAVER, candidates.size());
-      log.info("Naver 뉴스 수집 완료: {}건", candidates.size());
+      log.info("Naver 뉴스 수집 완료 | count={}", candidates.size());
     } catch (Exception e) {
       log.error("Naver 뉴스 수집 실패", e);
     }
@@ -83,7 +87,7 @@ public class NewsCollectService {
       }
       articleUpsertService.upsertAll(source, candidates);
       newsCollectMetrics.countCollected(source, candidates.size());
-      log.info("{} RSS 수집 완료: {}건", source, candidates.size());
+      log.info("{} RSS 수집 완료 | count={}", source, candidates.size());
     } catch (Exception e) {
       log.error("{} RSS 수집 실패", source, e);
     }

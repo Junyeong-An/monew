@@ -3,7 +3,8 @@ package com.sprint.mission.monew.domain.comment.service;
 import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
-import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
+import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
+import com.sprint.mission.monew.domain.notification.entity.ResourceType;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeAlreadyExistsException;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeNotFoundException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
@@ -36,7 +37,7 @@ public class CommentLikeService {
 
   @Transactional
   public CommentLikeResponse create(UUID commentId, UUID userId) {
-    log.debug("[COMMENT_LIKE_CREATE_START] 댓글 좋아요 등록 시작 - 요청자 ID={}, 댓글 ID={}", userId, commentId);
+    log.debug("댓글 좋아요 등록 시작 | commentId={}, userId={}", commentId, userId);
 
     if (commentLikeRepository.existsByUserIdAndCommentId(userId, commentId)) {
       throw CommentLikeAlreadyExistsException.withId(userId, commentId);
@@ -59,18 +60,16 @@ public class CommentLikeService {
       throw CommentLikeAlreadyExistsException.withId(userId, commentId);
     }
 
-    log.info(
-        "[COMMENT_LIKE_CREATE_SUCCESS] 댓글 좋아요 등록 성공 - 좋아요 ID={}, 요청자 ID={}, 댓글 ID={}",
-        savedCommentLike.getId(),
-        userId,
-        commentId);
+    log.info("댓글 좋아요 등록 완료 | commentLikeId={}, commentId={}, userId={}",
+        savedCommentLike.getId(), commentId, userId);
 
     commentMetrics.countLiked();
 
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;
     if (authorId != null && !authorId.equals(userId)) {
+      String message = "[" + user.getNickname() + "]님이 나의 댓글을 좋아합니다.";
       eventPublisher.publishEvent(
-          new CommentLikedEvent(commentId, authorId, user.getNickname()));
+          new CommentLikedNotificationEvent(authorId, message, ResourceType.COMMENT, commentId));
     }
 
     return commentLikeMapper.toResponse(savedCommentLike);
@@ -78,7 +77,7 @@ public class CommentLikeService {
 
   @Transactional
   public void cancel(UUID commentId, UUID userId) {
-    log.debug("[COMMENT_LIKE_CANCEL_START] 댓글 좋아요 취소 시작 - 요청자 ID={}, 댓글 ID={}", userId, commentId);
+    log.debug("댓글 좋아요 취소 시작 | commentId={}, userId={}", commentId, userId);
 
     int deleted = commentLikeRepository.deleteByUserIdAndCommentId(userId, commentId);
 
@@ -89,6 +88,6 @@ public class CommentLikeService {
     commentRepository.decreaseLikeCount(commentId);
     commentMetrics.countLikeCanceled();
 
-    log.info("[COMMENT_LIKE_CANCEL_SUCCESS] 댓글 좋아요 취소 성공 - 요청자 ID={}, 댓글 ID={}", userId, commentId);
+    log.info("댓글 좋아요 취소 완료 | commentId={}, userId={}", commentId, userId);
   }
 }

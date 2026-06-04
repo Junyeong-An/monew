@@ -13,9 +13,11 @@ import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class InterestService {
 
   @Transactional
   public InterestResponse create(InterestCreateRequest request) {
+    log.debug("관심사 생성 시작 | name={}", request.name());
     List<Interest> existingInterests = interestRepository.findAll();
     boolean hasSimilar =
         existingInterests.stream()
@@ -38,22 +41,27 @@ public class InterestService {
       throw InterestAlreadyExistsException.withName(request.name());
     }
     Interest saved = interestRepository.save(Interest.create(request.name(), request.keywords()));
+    log.info("관심사 생성 완료 | interestId={}, name={}", saved.getId(), saved.getName());
     return interestMapper.toResponse(saved);
   }
 
   @Transactional
   public InterestResponse updateKeywords(UUID id, InterestUpdateRequest request) {
+    log.debug("관심사 키워드 수정 시작 | interestId={}", id);
     Interest interest = interestRepository.findById(id)
         .orElseThrow(() -> InterestNotFoundException.withId(id));
     interest.updateKeywords(request.keywords());
+    log.info("관심사 키워드 수정 완료 | interestId={}", id);
     return interestMapper.toResponse(interest);
   }
 
   @Transactional
   public void hardDelete(UUID id) {
+    log.debug("관심사 물리 삭제 시작 | interestId={}", id);
     Interest interest = interestRepository.findById(id)
         .orElseThrow(() -> InterestNotFoundException.withId(id));
     interestRepository.delete(interest);
+    log.info("관심사 물리 삭제 완료 | interestId={}", id);
   }
 
   private double similarity(String a, String b) {

@@ -1,7 +1,6 @@
 package com.sprint.mission.monew.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -11,7 +10,6 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.article.event.ArticleCreatedEvent;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import java.time.Instant;
 import java.util.List;
@@ -22,14 +20,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ArticleUpsertServiceTest {
 
   @InjectMocks ArticleUpsertService articleUpsertService;
   @Mock ArticleRepository articleRepository;
-  @Mock ApplicationEventPublisher eventPublisher;
   @Mock NewsCollectMetrics newsCollectMetrics;
 
   @Nested
@@ -37,8 +33,8 @@ class ArticleUpsertServiceTest {
   class UpsertAll {
 
     @Test
-    @DisplayName("신규 기사는 일괄 저장하고 ArticleCreatedEvent를 발행한다")
-    void 신규_기사는_일괄_저장하고_이벤트를_발행한다() {
+    @DisplayName("신규 기사는 일괄 저장한다")
+    void 신규_기사는_일괄_저장한다() {
       // given
       ArticleCandidate candidate = new ArticleCandidate(
           "https://example.com/1", "제목", Instant.now(), "요약");
@@ -53,13 +49,12 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).saveAll(anyList());
-      verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
       verify(newsCollectMetrics).countCreated();
     }
 
     @Test
-    @DisplayName("기존 기사는 제목·요약을 업데이트하고 이벤트를 발행하지 않는다")
-    void 기존_기사는_업데이트하고_이벤트를_발행하지_않는다() {
+    @DisplayName("기존 기사는 제목·요약을 업데이트하고 saveAll을 호출하지 않는다")
+    void 기존_기사는_업데이트하고_saveAll을_호출하지_않는다() {
       // given
       Article existing = Article.create(
           ArticleSource.NAVER, "https://example.com/1", "원래 제목", Instant.now(), "원래 요약");
@@ -73,7 +68,6 @@ class ArticleUpsertServiceTest {
 
       // then — 기존 기사만 있으면 saveAll 호출 없이 dirty-checking으로 업데이트
       verify(articleRepository, never()).saveAll(any());
-      verify(eventPublisher, never()).publishEvent(any());
       verify(newsCollectMetrics).countDuplicated();
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");
@@ -95,7 +89,7 @@ class ArticleUpsertServiceTest {
       articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
 
       // then
-      verify(eventPublisher, never()).publishEvent(any());
+      verify(articleRepository, never()).saveAll(any());
       verify(newsCollectMetrics, never()).countDuplicated();
       assertThat(deleted.getTitle()).isEqualTo("원래 제목");
     }
@@ -123,7 +117,6 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
-      verify(eventPublisher, never()).publishEvent(any());
       verify(newsCollectMetrics, never()).countCreated();
       verify(newsCollectMetrics, never()).countDuplicated();
     }
@@ -140,7 +133,6 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
-      verify(eventPublisher, never()).publishEvent(any());
       verify(newsCollectMetrics, never()).countCreated();
       verify(newsCollectMetrics, never()).countDuplicated();
     }
@@ -168,7 +160,6 @@ class ArticleUpsertServiceTest {
               && list.get(0).getSourceUrl().equals("https://example.com/1")
               && list.get(0).getTitle().equals("첫 번째 제목")
               && list.get(0).getSummary().equals("첫 번째 요약")));
-      verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
       verify(newsCollectMetrics).countCreated();
     }
 
@@ -194,7 +185,6 @@ class ArticleUpsertServiceTest {
       assertThat(article2.getSummary()).isEqualTo("요약2");
       verify(newsCollectMetrics).countDuplicated();
       verify(articleRepository, never()).saveAll(any());
-      verify(eventPublisher, never()).publishEvent(any());
     }
   }
 }

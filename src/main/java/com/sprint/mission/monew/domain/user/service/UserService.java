@@ -71,7 +71,7 @@ public class UserService {
     }
 
     userMetrics.countRegistered();
-    log.info("회원가입 완료: id={}", saved.getId());
+    log.info("회원가입 완료 | userId={}", saved.getId());
     return userMapper.toResponse(saved);
   }
 
@@ -87,7 +87,7 @@ public class UserService {
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserLoginFailedException.withPassword();
     }
-    log.info("로그인 완료: id={}", user.getId());
+    log.info("로그인 완료 | userId={}", user.getId());
     return userMapper.toResponse(user);
   }
 
@@ -103,7 +103,7 @@ public class UserService {
 
     user.verifyEmail();
     emailVerificationRepository.delete(verification);
-    log.info("이메일 인증 완료: userId={}", user.getId());
+    log.info("이메일 인증 완료 | userId={}", user.getId());
   }
 
   @Transactional
@@ -115,7 +115,7 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.updateNickname(request.nickname());
-    log.info("닉네임 수정 완료: id={}", userId);
+    log.info("닉네임 수정 완료 | userId={}", userId);
     return userMapper.toResponse(user);
   }
 
@@ -128,15 +128,15 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.softDelete();
-    log.info("논리 삭제 완료: id={}", userId);
+    log.info("사용자 논리 삭제 완료 | userId={}", userId);
   }
 
   @Transactional
   public int deleteExpiredUsers(Instant threshold) {
-    log.info("물리 삭제 실행: threshold={}", threshold);
+    log.info("사용자 물리 삭제 시작 | threshold={}", threshold);
     int deleted = userRepository.deleteAllByDeletedAtBefore(threshold);
     userMetrics.countDeleted(deleted);
-    log.info("물리 삭제 완료: {}건 삭제", deleted);
+    log.info("사용자 물리 삭제 완료 | count={}", deleted);
     return deleted;
   }
 
@@ -146,7 +146,7 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     userRepository.delete(user);
-    log.info("물리 삭제 완료: id={}", userId);
+    log.info("사용자 물리 삭제 완료 | userId={}", userId);
   }
 
   @Transactional
@@ -158,6 +158,6 @@ public class UserService {
       throw UserInvalidPasswordException.withoutDetail();
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
-    log.info("비밀번호 변경 완료: id={}", requestUserId);
+    log.info("비밀번호 변경 완료 | userId={}", requestUserId);
   }
 }

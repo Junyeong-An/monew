@@ -33,6 +33,7 @@ public class NotificationService {
   @Transactional
   public void confirmAll(UUID userId) {
     notificationRepository.confirmAllByUserId(userId, Instant.now());
+    log.info("알림 전체 확인 완료 | userId={}", userId);
   }
 
   @Transactional
@@ -40,42 +41,33 @@ public class NotificationService {
     Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
     int deleted = notificationRepository.deleteConfirmedBefore(cutoff);
     notificationMetrics.countDeleted(deleted);
-    log.info("만료 알림 삭제 완료: {}건", deleted);
+    log.info("만료 알림 삭제 완료 | count={}", deleted);
   }
 
   @Transactional
-  public void createCommentLikeNotification(
-      UUID commentId, UUID commentAuthorId, String likerNickname) {
-    Notification notification =
-        Notification.create(
-            commentAuthorId,
-            "[" + likerNickname + "]님이 나의 댓글을 좋아합니다.",
-            ResourceType.COMMENT,
-            commentId);
-    Notification saved = notificationRepository.save(notification);
-    notificationMetrics.countCommentLikeNotification();
-    log.info("댓글 좋아요 알림 생성 완료: 알림 ID={}, 수신자={}", saved.getId(), commentAuthorId);
-  }
-
-  @Transactional
-  public void createArticleNotifications(
-      UUID interestId, String interestName, List<UUID> subscriberIds) {
+  public void createArticleNotifications(UUID interestId, String message, List<UUID> subscriberIds) {
     if (subscriberIds.isEmpty()) {
       return;
     }
     List<Notification> notifications =
         subscriberIds.stream()
-            .map(
-                uid ->
-                    Notification.create(
-                        uid,
-                        "[" + interestName + "]와 관련된 기사가 등록되었습니다.",
-                        ResourceType.INTEREST,
-                        interestId))
+            .map(uid -> Notification.create(uid, message, ResourceType.INTEREST, interestId))
             .toList();
     List<Notification> saved = notificationRepository.saveAll(notifications);
     notificationMetrics.countArticleNotifications(saved.size());
-    log.info("기사 등록 알림 생성 완료: 관심사={}, 수신자={}명", interestName, saved.size());
+    log.info("기사 등록 알림 생성 완료 | interestId={}, recipientCount={}", interestId, saved.size());
+  }
+
+  @Transactional
+  public void create(UUID recipientId, String message, ResourceType resourceType, UUID resourceId) {
+    Notification notification = Notification.create(recipientId, message, resourceType, resourceId);
+    Notification saved = notificationRepository.save(notification);
+    if (resourceType == ResourceType.COMMENT) {
+      notificationMetrics.countCommentLikeNotification();
+    } else {
+      notificationMetrics.countArticleNotifications(1);
+    }
+    log.info("알림 생성 완료 | notificationId={}, recipientId={}", saved.getId(), recipientId);
   }
 
   @Transactional
@@ -85,5 +77,6 @@ public class NotificationService {
             .findByIdAndUserIdAndConfirmedAtIsNull(notificationId, userId)
             .orElseThrow(() -> NotificationNotFoundException.withId(notificationId));
     notification.confirm();
+    log.info("알림 확인 완료 | notificationId={}, userId={}", notificationId, userId);
   }
 }

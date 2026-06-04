@@ -14,10 +14,12 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -30,6 +32,7 @@ public class SubscriptionService {
 
   @Transactional
   public SubscriptionResponse subscribe(UUID interestId, UUID userId) {
+    log.debug("관심사 구독 시작 | interestId={}, userId={}", interestId, userId);
     Interest interest = interestRepository.findById(interestId)
         .orElseThrow(() -> InterestNotFoundException.withId(interestId));
     User user = userRepository.findById(userId)
@@ -40,6 +43,7 @@ public class SubscriptionService {
     try {
       Subscription saved = subscriptionRepository.saveAndFlush(Subscription.create(interest, user));
       interest.increaseSubscriberCount();
+      log.info("관심사 구독 완료 | interestId={}, userId={}", interestId, userId);
       return subscriptionMapper.toResponse(saved);
     } catch (DataIntegrityViolationException e) {
       throw SubscriptionAlreadyExistsException.withIds(interestId, userId);
@@ -48,6 +52,7 @@ public class SubscriptionService {
 
   @Transactional
   public void unsubscribe(UUID interestId, UUID userId) {
+    log.debug("관심사 구독 취소 시작 | interestId={}, userId={}", interestId, userId);
     Interest interest = interestRepository.findById(interestId)
         .orElseThrow(() -> InterestNotFoundException.withId(interestId));
 
@@ -56,5 +61,6 @@ public class SubscriptionService {
 
     interest.decreaseSubscriberCount();
     subscriptionRepository.delete(subscription);
+    log.info("관심사 구독 취소 완료 | interestId={}, userId={}", interestId, userId);
   }
 }
