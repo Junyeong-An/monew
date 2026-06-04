@@ -173,9 +173,9 @@ class ArticleUpsertServiceTest {
     }
 
     @Test
-    @DisplayName("findBySourceUrlIn이 중복 결과를 반환해도 예외 없이 처리한다")
-    void findBySourceUrlIn_중복_결과도_예외_없이_처리한다() {
-      // given — DB unique 제약 위반 등 예외 상황에서 같은 URL의 기사가 두 건 반환될 때 mergeFunction 동작 검증
+    @DisplayName("findBySourceUrlIn이 중복 결과를 반환하면 first-seen 엔티티를 업데이트한다")
+    void findBySourceUrlIn_중복_결과는_first_seen_엔티티를_업데이트한다() {
+      // given — 같은 URL로 두 건 반환 → mergeFunction (a, b) -> a 로 article1 채택
       Article article1 = Article.create(
           ArticleSource.NAVER, "https://example.com/1", "제목1", Instant.now(), "요약1");
       Article article2 = Article.create(
@@ -184,9 +184,17 @@ class ArticleUpsertServiceTest {
           "https://example.com/1", "새 제목", Instant.now(), "새 요약");
       given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of(article1, article2));
 
-      // when & then — 중복 키 충돌 없이 처리됨 (first-seen 유지)
-      assertThatNoException().isThrownBy(() ->
-          articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate)));
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
+
+      // then — article1(first-seen)만 업데이트되고, article2는 변경 없음
+      assertThat(article1.getTitle()).isEqualTo("새 제목");
+      assertThat(article1.getSummary()).isEqualTo("새 요약");
+      assertThat(article2.getTitle()).isEqualTo("제목2");
+      assertThat(article2.getSummary()).isEqualTo("요약2");
+      verify(newsCollectMetrics).countDuplicated();
+      verify(articleRepository, never()).saveAll(any());
+      verify(eventPublisher, never()).publishEvent(any());
     }
   }
 }
