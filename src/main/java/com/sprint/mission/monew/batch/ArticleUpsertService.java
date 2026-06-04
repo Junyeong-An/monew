@@ -4,7 +4,6 @@ import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.event.ArticleCreatedEvent;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,30 +53,4 @@ public class ArticleUpsertService {
     });
   }
 
-  // save() + publishEvent()를 같은 트랜잭션으로 묶어 @TransactionalEventListener(AFTER_COMMIT) 안전 보장
-  @Transactional
-  public void upsert(ArticleSource source, String sourceUrl, String title,
-      Instant publishDate, String summary) {
-    if (sourceUrl == null || sourceUrl.isBlank()) {
-      log.warn("sourceUrl이 없어 기사를 건너뜁니다: title={}", title);
-      return;
-    }
-    articleRepository.findBySourceUrl(sourceUrl)
-        .ifPresentOrElse(
-            existing -> {
-              if (existing.isDeleted()) {
-                log.debug("소프트 삭제된 기사 건너뜁니다: sourceUrl={}", sourceUrl);
-                return;
-              }
-              existing.update(title, summary);
-              articleRepository.save(existing);
-              newsCollectMetrics.countDuplicated();
-            },
-            () -> {
-              Article saved = articleRepository.save(
-                  Article.create(source, sourceUrl, title, publishDate, summary));
-              eventPublisher.publishEvent(new ArticleCreatedEvent(saved));
-              newsCollectMetrics.countCreated();
-            });
-  }
 }
