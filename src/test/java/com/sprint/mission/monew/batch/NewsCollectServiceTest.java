@@ -195,5 +195,57 @@ class NewsCollectServiceTest {
       // then — candidates가 비어있으므로 upsertAll에 빈 목록이 전달됨
       verify(articleUpsertService).upsertAll(eq(ArticleSource.HANKYUNG), argThat(List::isEmpty));
     }
+
+    @Test
+    @DisplayName("originallink가 blank인 Naver 기사는 link를 sourceUrl로 사용한다")
+    void originallink가_blank인_기사는_link를_sourceUrl로_사용한다() {
+      // given — originallink blank → link 사용 (line 54 blank 분기)
+      NaverNewsItem item = new NaverNewsItem("제목", "  ", "https://example.com/1", "요약",
+          "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService).upsertAll(
+          eq(ArticleSource.NAVER),
+          argThat(list -> !list.isEmpty() && list.get(0).sourceUrl().equals("https://example.com/1")));
+    }
+
+    @Test
+    @DisplayName("originallink·link 모두 blank인 Naver 기사는 candidates에 포함하지 않고 건너뛴다")
+    void originallink_link_모두_blank인_기사는_건너뛴다() {
+      // given — originallink blank, link blank → sourceUrl blank → skip (line 56 blank 분기)
+      NaverNewsItem item = new NaverNewsItem("제목", "  ", "  ", "요약",
+          "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.NAVER), argThat(List::isEmpty));
+    }
+
+    @Test
+    @DisplayName("RSS sourceUrl이 blank인 기사는 candidates에 포함하지 않고 건너뛴다")
+    void RSS_sourceUrl이_blank인_기사는_건너뛴다() {
+      // given — sourceUrl blank인 RSS 항목 → filter에서 제거 (line 76 blank 분기)
+      RssArticleDto blankUrlItem = new RssArticleDto(
+          ArticleSource.HANKYUNG, "  ", "기사 제목", Instant.now(), "요약");
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.HANKYUNG))).willReturn(List.of(blankUrlItem));
+      given(rssNewsParser.parse(eq(ArticleSource.CHOSUN))).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.YONHAP))).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.HANKYUNG), argThat(List::isEmpty));
+    }
   }
 }

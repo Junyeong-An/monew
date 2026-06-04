@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -111,6 +112,34 @@ class ArticleUpsertServiceTest {
     }
 
     @Test
+    @DisplayName("null sourceUrl candidates는 필터링하고 DB 조회를 하지 않는다")
+    void null_sourceUrl_candidates는_필터링한다() {
+      // given — null sourceUrl → dedup 필터에서 제거 (line 34 null 분기)
+      ArticleCandidate nullUrl = new ArticleCandidate(null, "제목", Instant.now(), "요약");
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(nullUrl));
+
+      // then
+      verify(articleRepository, never()).findBySourceUrlIn(any());
+      verify(articleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("blank sourceUrl candidates는 필터링하고 DB 조회를 하지 않는다")
+    void blank_sourceUrl_candidates는_필터링한다() {
+      // given — blank sourceUrl → dedup 필터에서 제거 (line 34 blank 분기)
+      ArticleCandidate blank = new ArticleCandidate("  ", "제목", Instant.now(), "요약");
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(blank));
+
+      // then
+      verify(articleRepository, never()).findBySourceUrlIn(any());
+      verify(articleRepository, never()).saveAll(any());
+    }
+
+    @Test
     @DisplayName("동일 sourceUrl 중복 candidates는 first-seen 하나만 저장한다")
     void 동일_sourceUrl_중복_candidates는_하나만_저장한다() {
       // given — 같은 URL 2건 → dedup 후 1건만 saveAll
@@ -135,6 +164,23 @@ class ArticleUpsertServiceTest {
               && list.get(0).getSummary().equals("첫 번째 요약")));
       verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
       verify(newsCollectMetrics).countCreated();
+    }
+
+    @Test
+    @DisplayName("findBySourceUrlIn이 중복 결과를 반환해도 예외 없이 처리한다")
+    void findBySourceUrlIn_중복_결과도_예외_없이_처리한다() {
+      // given — DB unique 제약 위반 등 예외 상황에서 같은 URL의 기사가 두 건 반환될 때 mergeFunction 동작 검증
+      Article article1 = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "제목1", Instant.now(), "요약1");
+      Article article2 = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "제목2", Instant.now(), "요약2");
+      ArticleCandidate candidate = new ArticleCandidate(
+          "https://example.com/1", "새 제목", Instant.now(), "새 요약");
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of(article1, article2));
+
+      // when & then — 중복 키 충돌 없이 처리됨 (first-seen 유지)
+      assertThatNoException().isThrownBy(() ->
+          articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate)));
     }
   }
 }
