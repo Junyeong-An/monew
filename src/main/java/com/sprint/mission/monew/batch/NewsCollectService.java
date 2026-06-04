@@ -42,6 +42,7 @@ public class NewsCollectService {
   private void collectNaver() {
     try {
       List<NaverNewsItem> items = naverNewsClient.fetchNews();
+      int nUpserted = 0;
       for (NaverNewsItem item : items) {
         try {
           Optional<java.time.Instant> publishDate = NaverNewsClient.parseNaverDate(item.pubDate());
@@ -55,13 +56,14 @@ public class NewsCollectService {
           String summary = NaverNewsClient.stripHtml(item.description());
           articleUpsertService.upsert(ArticleSource.NAVER, sourceUrl, title,
               publishDate.get(), summary);
+          nUpserted++;
         } catch (Exception e) {
           newsCollectMetrics.countFailed(ArticleSource.NAVER);
           log.warn("Naver 기사 단건 처리 실패: link={}", item.link(), e);
         }
       }
-      newsCollectMetrics.countCollected(ArticleSource.NAVER, items.size());
-      log.info("Naver 뉴스 수집 완료: {}건", items.size());
+      newsCollectMetrics.countCollected(ArticleSource.NAVER, nUpserted);
+      log.info("Naver 뉴스 수집 완료: {}건", nUpserted);
     } catch (Exception e) {
       log.error("Naver 뉴스 수집 실패", e);
     }

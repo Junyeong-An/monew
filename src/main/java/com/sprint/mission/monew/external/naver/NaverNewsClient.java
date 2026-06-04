@@ -57,7 +57,7 @@ public class NaverNewsClient {
 
   public static Optional<Instant> parseNaverDate(String pubDate) {
     if (pubDate == null) {
-      log.warn("Naver 기사 날짜가 null입니다");
+      log.debug("Naver 기사 날짜가 null입니다");
       return Optional.empty();
     }
     try {
@@ -65,7 +65,7 @@ public class NaverNewsClient {
       String dateStr = pubDate.contains(",") ? pubDate.substring(pubDate.indexOf(',') + 2) : pubDate;
       return Optional.of(OffsetDateTime.parse(dateStr, NAVER_DATE_FORMATTER).toInstant());
     } catch (Exception e) {
-      log.warn("Naver 기사 날짜 파싱 실패로 기사를 건너뜁니다: pubDate={}", pubDate);
+      log.debug("Naver 기사 날짜 파싱 실패: pubDate={}", pubDate);
       return Optional.empty();
     }
   }
