@@ -161,5 +161,21 @@ class NewsCollectServiceTest {
           eq(ArticleSource.NAVER),
           argThat(list -> !list.isEmpty() && list.get(0).sourceUrl().equals("https://example.com/1")));
     }
+
+    @Test
+    @DisplayName("originallink·link 모두 null인 Naver 기사는 candidates에 포함하지 않고 건너뛴다")
+    void originallink_link_모두_null인_기사는_건너뛴다() {
+      // given — originallink, link 모두 null → sourceUrl null → skip
+      NaverNewsItem item = new NaverNewsItem("제목", null, null, "요약",
+          "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then — candidates가 비어있으므로 upsertAll에 빈 목록이 전달됨
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.NAVER), argThat(List::isEmpty));
+    }
   }
 }

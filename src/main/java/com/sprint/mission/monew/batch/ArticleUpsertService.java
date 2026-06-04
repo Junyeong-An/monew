@@ -33,7 +33,7 @@ public class ArticleUpsertService {
     }
     List<String> urls = candidates.stream().map(ArticleCandidate::sourceUrl).toList();
     Map<String, Article> existing = articleRepository.findBySourceUrlIn(urls).stream()
-        .collect(Collectors.toMap(Article::getSourceUrl, Function.identity()));
+        .collect(Collectors.toMap(Article::getSourceUrl, Function.identity(), (a, b) -> a));
 
     List<Article> toCreate = new ArrayList<>();
     for (ArticleCandidate c : candidates) {
@@ -46,6 +46,9 @@ public class ArticleUpsertService {
       }
     }
 
+    if (toCreate.isEmpty()) {
+      return;
+    }
     List<Article> saved = articleRepository.saveAll(toCreate);
     saved.forEach(a -> {
       eventPublisher.publishEvent(new ArticleCreatedEvent(a));

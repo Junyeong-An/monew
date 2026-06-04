@@ -69,7 +69,8 @@ class ArticleUpsertServiceTest {
       // when
       articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
 
-      // then
+      // then — 기존 기사만 있으면 saveAll 호출 없이 dirty-checking으로 업데이트
+      verify(articleRepository, never()).saveAll(any());
       verify(eventPublisher, never()).publishEvent(any());
       verify(newsCollectMetrics).countDuplicated();
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");

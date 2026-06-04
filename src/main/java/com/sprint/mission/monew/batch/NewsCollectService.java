@@ -53,6 +53,10 @@ public class NewsCollectService {
         }
         String sourceUrl = item.originallink() != null && !item.originallink().isBlank()
             ? item.originallink() : item.link();
+        if (sourceUrl == null || sourceUrl.isBlank()) {
+          log.warn("sourceUrl이 없어 기사를 건너뜁니다: pubDate={}", item.pubDate());
+          continue;
+        }
         String title = NaverNewsClient.stripHtml(item.title());
         String summary = NaverNewsClient.stripHtml(item.description());
         candidates.add(new ArticleCandidate(sourceUrl, title, publishDate.get(), summary));
