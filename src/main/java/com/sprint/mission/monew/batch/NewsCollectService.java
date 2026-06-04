@@ -7,6 +7,7 @@ import com.sprint.mission.monew.external.rss.RssNewsParser;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -43,12 +44,17 @@ public class NewsCollectService {
       List<NaverNewsItem> items = naverNewsClient.fetchNews();
       for (NaverNewsItem item : items) {
         try {
+          Optional<java.time.Instant> publishDate = NaverNewsClient.parseNaverDate(item.pubDate());
+          if (publishDate.isEmpty()) {
+            log.warn("날짜 파싱 실패로 기사를 건너뜁니다: link={}", item.link());
+            continue;
+          }
           String sourceUrl = item.originallink() != null && !item.originallink().isBlank()
               ? item.originallink() : item.link();
           String title = NaverNewsClient.stripHtml(item.title());
           String summary = NaverNewsClient.stripHtml(item.description());
           articleUpsertService.upsert(ArticleSource.NAVER, sourceUrl, title,
-              NaverNewsClient.parseNaverDate(item.pubDate()), summary);
+              publishDate.get(), summary);
         } catch (Exception e) {
           newsCollectMetrics.countFailed(ArticleSource.NAVER);
           log.warn("Naver 기사 단건 처리 실패: link={}", item.link(), e);
