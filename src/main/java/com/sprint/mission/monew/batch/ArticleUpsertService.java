@@ -5,6 +5,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.event.ArticleCreatedEvent;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import java.time.Instant;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
@@ -20,6 +21,11 @@ public class ArticleUpsertService {
   private final ArticleRepository articleRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final NewsCollectMetrics newsCollectMetrics;
+
+  @Transactional
+  public void upsertAll(ArticleSource source, List<ArticleCandidate> candidates) {
+    // TODO: 일괄 처리 구현 예정
+  }
 
   // save() + publishEvent()를 같은 트랜잭션으로 묶어 @TransactionalEventListener(AFTER_COMMIT) 안전 보장
   @Transactional

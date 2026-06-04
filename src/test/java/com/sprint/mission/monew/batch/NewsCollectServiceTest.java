@@ -2,6 +2,7 @@ package com.sprint.mission.monew.batch;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -218,6 +219,41 @@ class NewsCollectServiceTest {
       assertThatNoException().isThrownBy(() -> newsCollectService.collect());
       verify(articleUpsertService).upsert(
           eq(ArticleSource.HANKYUNG), eq("https://hankyung.com/2"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Naver 기사를 수집하면 upsertAll에 일괄 위임한다")
+    void Naver_기사를_수집하면_upsertAll에_일괄_위임한다() {
+      // given
+      NaverNewsItem item = new NaverNewsItem(
+          "제목", "https://example.com/1", "https://example.com/1",
+          "요약", "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.NAVER), anyList());
+    }
+
+    @Test
+    @DisplayName("RSS 기사를 수집하면 upsertAll에 일괄 위임한다")
+    void RSS_기사를_수집하면_upsertAll에_일괄_위임한다() {
+      // given
+      RssArticleDto rssItem = new RssArticleDto(
+          ArticleSource.HANKYUNG, "https://hankyung.com/1", "한경 기사", Instant.now(), "요약");
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.HANKYUNG))).willReturn(List.of(rssItem));
+      given(rssNewsParser.parse(eq(ArticleSource.CHOSUN))).willReturn(List.of());
+      given(rssNewsParser.parse(eq(ArticleSource.YONHAP))).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService).upsertAll(eq(ArticleSource.HANKYUNG), anyList());
     }
   }
 }
