@@ -123,6 +123,9 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
+      verify(eventPublisher, never()).publishEvent(any());
+      verify(newsCollectMetrics, never()).countCreated();
+      verify(newsCollectMetrics, never()).countDuplicated();
     }
 
     @Test
@@ -137,6 +140,9 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
+      verify(eventPublisher, never()).publishEvent(any());
+      verify(newsCollectMetrics, never()).countCreated();
+      verify(newsCollectMetrics, never()).countDuplicated();
     }
 
     @Test
