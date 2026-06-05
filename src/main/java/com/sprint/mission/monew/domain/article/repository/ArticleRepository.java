@@ -15,4 +15,6 @@ public interface ArticleRepository extends JpaRepository<Article, UUID>, Article
   List<Article> findBySourceUrlIn(List<String> sourceUrls);
 
   List<Article> findByCreatedAtAfterAndDeletedAtIsNull(Instant since);
+
+  List<Article> findByCreatedAtBetweenAndDeletedAtIsNull(Instant from, Instant to);
 }
