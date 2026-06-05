@@ -16,5 +16,6 @@ public interface ArticleRepository extends JpaRepository<Article, UUID>, Article
 
   List<Article> findByCreatedAtAfterAndDeletedAtIsNull(Instant since);
 
-  List<Article> findByCreatedAtBetweenAndDeletedAtIsNull(Instant from, Instant to);
+  List<Article> findByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedAtIsNull(
+      Instant from, Instant to);
 }

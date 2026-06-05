@@ -14,7 +14,7 @@ public class ArticleBackupScheduler {
 
   private final ArticleBackupService articleBackupService;
 
-  @Scheduled(cron = "${scheduler.article-backup.cron}")
+  @Scheduled(cron = "${scheduler.article-backup.cron:0 0 0 * * *}")
   public void backup() {
     log.info("기사 S3 백업 배치 시작");
     articleBackupService.backup();
