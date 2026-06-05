@@ -1,13 +1,10 @@
 package com.sprint.mission.monew.batch;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.zip.GZIPOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,9 +20,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @Service
 @RequiredArgsConstructor
 public class LogBackupService {
-
-  private static final DateTimeFormatter PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-  private static final DateTimeFormatter FILE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
   private final S3Client s3Client;
   private final LogBackupMetrics metrics;
@@ -55,8 +49,8 @@ public class LogBackupService {
       return;
     }
 
-    String s3Key = "logs/" + yesterday.format(PATH_FORMATTER)
-        + "/app-" + yesterday.format(FILE_FORMATTER) + ".log.gz";
+    String s3Key = "logs/" + yesterday.format(BatchGzipUtils.PATH_FORMATTER)
+        + "/app-" + yesterday.format(BatchGzipUtils.FILE_FORMATTER) + ".log.gz";
 
     try {
       s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(s3Key).build());
@@ -74,7 +68,7 @@ public class LogBackupService {
     }
 
     try {
-      byte[] compressed = gzip(Files.readAllBytes(logFile));
+      byte[] compressed = BatchGzipUtils.gzip(Files.readAllBytes(logFile));
       s3Client.putObject(
           PutObjectRequest.builder()
               .bucket(bucket)
@@ -84,7 +78,7 @@ public class LogBackupService {
               .build(),
           RequestBody.fromBytes(compressed));
       metrics.countUploaded();
-      metrics.recordBytes(compressed.length);
+      metrics.recordBytes((long) compressed.length);
       log.info("업로드 완료: {}", s3Key);
     } catch (Exception e) {
       metrics.countFailed();
@@ -92,14 +86,6 @@ public class LogBackupService {
     }
 
     deleteLocalFile(logFile);
-  }
-
-  private byte[] gzip(byte[] data) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try (GZIPOutputStream gzos = new GZIPOutputStream(bos)) {
-      gzos.write(data);
-    }
-    return bos.toByteArray();
   }
 
   private void deleteLocalFile(Path logFile) {
