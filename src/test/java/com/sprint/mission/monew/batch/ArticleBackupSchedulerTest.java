@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.batch;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +30,16 @@ class ArticleBackupSchedulerTest {
 
       // then
       verify(articleBackupService).backup();
+    }
+
+    @Test
+    @DisplayName("backup 중 예외 발생 시 예외를 외부로 전파하지 않는다")
+    void backup_중_예외_발생_시_전파하지_않는다() {
+      // given
+      doThrow(new RuntimeException("S3 연결 실패")).when(articleBackupService).backup();
+
+      // when & then
+      assertThatCode(() -> articleBackupScheduler.backup()).doesNotThrowAnyException();
     }
   }
 }
