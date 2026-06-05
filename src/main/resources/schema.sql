@@ -8,10 +8,12 @@ CREATE TABLE IF NOT EXISTS users
     nickname       VARCHAR(255)             NOT NULL,
     password       VARCHAR(255)             NOT NULL,
     email_verified BOOLEAN                  NOT NULL DEFAULT FALSE,
+    login_fail_count INT                    NOT NULL DEFAULT 0 CHECK (login_fail_count >= 0),
+    locked_at      TIMESTAMP WITH TIME ZONE,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE,
     deleted_at     TIMESTAMP WITH TIME ZONE,
-                                 PRIMARY KEY (id),
+    PRIMARY KEY (id),
     UNIQUE (email)
     );
 
@@ -243,3 +245,19 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens
     );
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
+
+-- =====================
+-- 13. account_unlock_tokens
+-- =====================
+CREATE TABLE IF NOT EXISTS user_unlock_tokens
+(
+    id         UUID                     NOT NULL,
+    user_id    UUID                     NOT NULL,
+    token      VARCHAR(255)             NOT NULL,
+    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (token),
+    UNIQUE (user_id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );

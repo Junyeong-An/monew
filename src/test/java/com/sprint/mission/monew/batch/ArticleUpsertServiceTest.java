@@ -49,7 +49,7 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).saveAll(anyList());
-      verify(newsCollectMetrics).countCreated();
+      verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
     }
 
     @Test
@@ -68,7 +68,7 @@ class ArticleUpsertServiceTest {
 
       // then — 기존 기사만 있으면 saveAll 호출 없이 dirty-checking으로 업데이트
       verify(articleRepository, never()).saveAll(any());
-      verify(newsCollectMetrics).countDuplicated();
+      verify(newsCollectMetrics).countDuplicated(ArticleSource.NAVER);
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");
     }
@@ -90,7 +90,7 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository, never()).saveAll(any());
-      verify(newsCollectMetrics, never()).countDuplicated();
+      verify(newsCollectMetrics, never()).countDuplicated(any());
       assertThat(deleted.getTitle()).isEqualTo("원래 제목");
     }
 
@@ -117,8 +117,8 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
-      verify(newsCollectMetrics, never()).countCreated();
-      verify(newsCollectMetrics, never()).countDuplicated();
+      verify(newsCollectMetrics, never()).countCreated(any());
+      verify(newsCollectMetrics, never()).countDuplicated(any());
     }
 
     @Test
@@ -133,8 +133,8 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository, never()).findBySourceUrlIn(any());
       verify(articleRepository, never()).saveAll(any());
-      verify(newsCollectMetrics, never()).countCreated();
-      verify(newsCollectMetrics, never()).countDuplicated();
+      verify(newsCollectMetrics, never()).countCreated(any());
+      verify(newsCollectMetrics, never()).countDuplicated(any());
     }
 
     @Test
@@ -160,7 +160,7 @@ class ArticleUpsertServiceTest {
               && list.get(0).getSourceUrl().equals("https://example.com/1")
               && list.get(0).getTitle().equals("첫 번째 제목")
               && list.get(0).getSummary().equals("첫 번째 요약")));
-      verify(newsCollectMetrics).countCreated();
+      verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
     }
 
     @Test
@@ -183,7 +183,7 @@ class ArticleUpsertServiceTest {
       assertThat(article1.getSummary()).isEqualTo("새 요약");
       assertThat(article2.getTitle()).isEqualTo("제목2");
       assertThat(article2.getSummary()).isEqualTo("요약2");
-      verify(newsCollectMetrics).countDuplicated();
+      verify(newsCollectMetrics).countDuplicated(ArticleSource.NAVER);
       verify(articleRepository, never()).saveAll(any());
     }
   }

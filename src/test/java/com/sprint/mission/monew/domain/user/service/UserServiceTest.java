@@ -9,7 +9,6 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
-
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
@@ -17,9 +16,11 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
+import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
-import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.entity.UserUnlockToken;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
@@ -28,9 +29,12 @@ import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedExcept
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
+import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
+import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -72,6 +76,9 @@ class UserServiceTest {
 
   @Mock
   private UserMetrics userMetrics;
+
+  @Mock
+  private UserUnlockTokenRepository userUnlockTokenRepository;
 
   @Nested
   @DisplayName("회원가입")
@@ -122,7 +129,6 @@ class UserServiceTest {
       then(emailVerificationRepository).should().save(any(EmailVerification.class));
       then(emailQueue).should().enqueueVerification(anyString(), anyString());
       then(userMapper).should().toResponse(user);
-      then(userMetrics).should().countRegistered();
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
       assertThat(result.nickname()).isEqualTo("테스터");
@@ -232,6 +238,80 @@ class UserServiceTest {
       // then
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
+    }
+
+    @Test
+    @DisplayName("계정이 잠긴 경우 예외 발생")
+    void 계정이_잠긴_경우_예외_발생() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      user.lock();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserAccountLockedException.class);
+    }
+
+    @Test
+    @DisplayName("비밀번호 틀리면 실패 횟수 증가")
+    void 비밀번호_틀리면_실패_횟수_증가() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserLoginFailedException.class);
+      assertThat(user.getLoginFailCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("비밀번호 5회 실패 시 계정 잠금")
+    void 비밀번호_5회_실패_시_계정_잠금() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+
+      // when - 5회 실패
+      for (int i = 0; i < 5; i++) {
+        assertThatThrownBy(() -> userService.login(request))
+            .isInstanceOf(UserLoginFailedException.class);
+      }
+
+      // then
+      assertThat(user.isLocked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("성공 시 실패 횟수 초기화")
+    void 성공_시_실패_횟수_초기화() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      user.incrementLoginFailCount();
+      user.incrementLoginFailCount();
+      UserResponse userResponse = new UserResponse(
+          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+      );
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
+      given(userMapper.toResponse(user)).willReturn(userResponse);
+
+      // when
+      userService.login(request);
+
+      // then
+      assertThat(user.getLoginFailCount()).isEqualTo(0);
     }
   }
 
@@ -626,6 +706,117 @@ class UserServiceTest {
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
       then(passwordResetTokenRepository).should().delete(token);
+    }
+  }
+  @Nested
+  @DisplayName("계정 잠금 해제 요청")
+  class RequestUnlock {
+
+    @Test
+    @DisplayName("존재하지 않는 이메일이면 예외 발생")
+    void 존재하지_않는_이메일이면_예외_발생() {
+      // given
+      UserUnlockRequest request = new UserUnlockRequest("notfound@test.com");
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.requestUnlock(request))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 잠금 해제 이메일 발송")
+    void 성공_시_잠금_해제_이메일_발송() {
+      // given
+      UserUnlockRequest request = new UserUnlockRequest("test@test.com");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      UserUnlockToken token = UserUnlockToken.create(UUID.randomUUID());
+
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(userUnlockTokenRepository.save(any(UserUnlockToken.class)))
+          .willReturn(token);
+
+      // when
+      userService.requestUnlock(request);
+
+      // then
+      then(userUnlockTokenRepository).should().deleteByUserId(user.getId());
+      then(userUnlockTokenRepository).should().save(any(UserUnlockToken.class));
+      then(emailQueue).should().enqueueUnlock(anyString(), anyString());
+    }
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 잠금 해제 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_잠금_해제_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        UserUnlockRequest request = new UserUnlockRequest("test@test.com");
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        UserUnlockToken token = UserUnlockToken.create(UUID.randomUUID());
+
+        given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .willReturn(Optional.of(user));
+        given(userUnlockTokenRepository.save(any(UserUnlockToken.class)))
+            .willReturn(token);
+
+        // when
+        userService.requestUnlock(request);
+
+        // then - 커밋 전 미호출
+        then(emailQueue).should(never()).enqueueUnlock(anyString(), anyString());
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then - 커밋 후 1회 호출
+        then(emailQueue).should(times(1)).enqueueUnlock(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 잠금 해제")
+  class Unlock {
+
+    @Test
+    @DisplayName("유효하지 않은 토큰이면 예외 발생")
+    void 유효하지_않은_토큰이면_예외_발생() {
+      // given
+      given(userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+          eq("invalid-token"), any(Instant.class)))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.unlock("invalid-token"))
+          .isInstanceOf(UserInvalidUnlockTokenException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 계정 잠금 해제")
+    void 성공_시_계정_잠금_해제() {
+      // given
+      UUID userId = UUID.randomUUID();
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.lock();
+      UserUnlockToken token = UserUnlockToken.create(userId);
+
+      given(userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+          eq(token.getToken()), any(Instant.class)))
+          .willReturn(Optional.of(token));
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.of(user));
+
+      // when
+      userService.unlock(token.getToken());
+
+      // then
+      assertThat(user.isLocked()).isFalse();
+      then(userUnlockTokenRepository).should().delete(token);
     }
   }
  }

@@ -34,6 +34,7 @@ public class LogBackupService {
     long startNanos = System.nanoTime();
     try {
       doUpload();
+      metrics.markSuccess();
     } finally {
       metrics.recordDuration(Duration.ofNanos(System.nanoTime() - startNanos));
     }

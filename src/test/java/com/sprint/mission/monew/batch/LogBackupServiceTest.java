@@ -152,6 +152,7 @@ class LogBackupServiceTest {
       verify(logBackupMetrics).countUploaded();
       verify(logBackupMetrics).recordBytes(anyLong());
       verify(logBackupMetrics).recordDuration(any(Duration.class));
+      verify(logBackupMetrics).markSuccess();
     }
   }
 }

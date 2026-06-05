@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,7 +13,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
@@ -21,6 +21,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
@@ -29,6 +30,8 @@ import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedExcept
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
+import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
@@ -184,7 +187,97 @@ class UserControllerTest {
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"));
     }
-  }
+
+    @Test
+    @DisplayName("계정이 잠긴 경우 423 반환")
+    void 계정이_잠긴_경우_423_반환() throws Exception {
+      UserLoginRequest request = new UserLoginRequest("test@test.com", "password123");
+      given(userService.login(any()))
+          .willThrow(UserAccountLockedException.withEmail("test@test.com"));
+      mockMvc.perform(post("/api/users/login")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isLocked());
+    }
+    }
+    @Nested
+    @DisplayName("POST /api/users/unlock — 계정 잠금 해제 요청")
+    class UnlockRequest {
+
+      @Test
+      @DisplayName("이메일이 빈 값이면 400 반환")
+      void 이메일이_빈_값이면_400_반환() throws Exception {
+        // given
+        UserUnlockRequest request = new UserUnlockRequest("");
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
+      }
+
+      @Test
+      @DisplayName("존재하지 않는 이메일이면 404 반환")
+      void 존재하지_않는_이메일이면_404_반환() throws Exception {
+        // given
+        UserUnlockRequest request = new UserUnlockRequest("notfound@test.com");
+        willThrow(UserNotFoundException.withEmail("notfound@test.com"))
+            .given(userService).requestUnlock(any());
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+      }
+
+      @Test
+      @DisplayName("성공 시 204 반환")
+      void 성공_시_204_반환() throws Exception {
+        // given
+        UserUnlockRequest request = new UserUnlockRequest("test@test.com");
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+        then(userService).should().requestUnlock(any());
+      }
+    }
+
+    @Nested
+    @DisplayName("GET /api/users/unlock — 계정 잠금 해제")
+    class Unlock {
+
+      @Test
+      @DisplayName("유효하지 않은 토큰이면 400 반환")
+      void 유효하지_않은_토큰이면_400_반환() throws Exception {
+        // given
+        String invalidToken = UUID.randomUUID().toString();
+        willThrow(UserInvalidUnlockTokenException.withToken(invalidToken))
+            .given(userService).unlock(eq(invalidToken));
+
+        // when & then
+        mockMvc.perform(get("/api/users/unlock")
+                .param("token", invalidToken))
+            .andExpect(status().isBadRequest());
+      }
+
+      @Test
+      @DisplayName("성공 시 200 반환")
+      void 성공_시_200_반환() throws Exception {
+        // given
+        String validToken = UUID.randomUUID().toString();
+
+        // when & then
+        mockMvc.perform(get("/api/users/unlock")
+                .param("token", validToken))
+            .andExpect(status().isOk());
+        then(userService).should().unlock(eq(validToken));
+      }
+    }
 
   @Nested
   @DisplayName("GET /api/users/verify — 이메일 인증")

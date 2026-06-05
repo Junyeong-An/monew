@@ -34,18 +34,24 @@ public class NewsCollectService {
   public void collect() {
     Instant batchStartTime = Instant.now();
     long start = System.nanoTime();
+    boolean allSucceeded = false;
     try {
-      collectNaver();
-      collectRss(ArticleSource.HANKYUNG);
-      collectRss(ArticleSource.CHOSUN);
-      collectRss(ArticleSource.YONHAP);
+      boolean naver = collectNaver();
+      boolean hankyung = collectRss(ArticleSource.HANKYUNG);
+      boolean chosun = collectRss(ArticleSource.CHOSUN);
+      boolean yonhap = collectRss(ArticleSource.YONHAP);
+      allSucceeded = naver && hankyung && chosun && yonhap;
     } finally {
       newsCollectMetrics.recordCollectDuration(Duration.ofNanos(System.nanoTime() - start));
     }
     interestNotificationService.notifyNewArticles(batchStartTime);
+    // 모든 출처가 정상 수집된 경우에만 성공 시각을 갱신한다 (일부 실패 시 신호 왜곡 방지)
+    if (allSucceeded) {
+      newsCollectMetrics.markSuccess();
+    }
   }
 
-  private void collectNaver() {
+  private boolean collectNaver() {
     try {
       List<NaverNewsItem> items = naverNewsClient.fetchNews();
       List<ArticleCandidate> candidates = new ArrayList<>();
@@ -68,12 +74,15 @@ public class NewsCollectService {
       articleUpsertService.upsertAll(ArticleSource.NAVER, candidates);
       newsCollectMetrics.countCollected(ArticleSource.NAVER, candidates.size());
       log.info("Naver 뉴스 수집 완료 | count={}", candidates.size());
+      return true;
     } catch (Exception e) {
+      newsCollectMetrics.countFailed(ArticleSource.NAVER);
       log.error("Naver 뉴스 수집 실패", e);
+      return false;
     }
   }
 
-  private void collectRss(ArticleSource source) {
+  private boolean collectRss(ArticleSource source) {
     try {
       List<RssArticleDto> items = rssNewsParser.parse(source);
       List<ArticleCandidate> candidates = items.stream()
@@ -88,8 +97,11 @@ public class NewsCollectService {
       articleUpsertService.upsertAll(source, candidates);
       newsCollectMetrics.countCollected(source, candidates.size());
       log.info("{} RSS 수집 완료 | count={}", source, candidates.size());
+      return true;
     } catch (Exception e) {
+      newsCollectMetrics.countFailed(source);
       log.error("{} RSS 수집 실패", source, e);
+      return false;
     }
   }
 }

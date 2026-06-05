@@ -112,9 +112,9 @@ NotificationServiceTest {
     @DisplayName("repository에 조회를 위임하고 결과를 반환한다")
     void repository에_조회를_위임하고_결과를_반환한다() {
       // given
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 10);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
       CursorPageResponse<NotificationResponse> expected =
-          new CursorPageResponse<>(List.of(), null, null, false, 0, 0L);
+          new CursorPageResponse<>(List.of(), null, null, null, false, 0, 0L);
       given(notificationRepository.findUnconfirmed(userId, condition)).willReturn(expected);
 
       // when
@@ -192,25 +192,6 @@ NotificationServiceTest {
                           && n.getResourceType() == ResourceType.COMMENT
                           && n.getResourceId().equals(resourceId)
                           && n.getContent().equals(message)));
-      then(notificationMetrics).should().countCommentLikeNotification();
-    }
-
-    @Test
-    @DisplayName("INTEREST 타입 알림은 기사 알림 메트릭으로 집계된다")
-    void INTEREST_타입_알림은_기사_알림_메트릭으로_집계된다() {
-      // given
-      UUID recipientId = UUID.randomUUID();
-      String message = "[인공지능]와 관련된 기사가 1건 등록되었습니다.";
-      UUID resourceId = UUID.randomUUID();
-      given(notificationRepository.save(any(Notification.class)))
-          .willAnswer(invocation -> invocation.getArgument(0));
-
-      // when
-      notificationService.create(recipientId, message, ResourceType.INTEREST, resourceId);
-
-      // then — 댓글 메트릭이 아닌 기사 알림 메트릭으로 집계된다
-      then(notificationMetrics).should().countArticleNotifications(1);
-      then(notificationMetrics).should(org.mockito.Mockito.never()).countCommentLikeNotification();
     }
   }
 
@@ -245,7 +226,6 @@ NotificationServiceTest {
                                       n.getContent().equals(message)
                                           && n.getResourceType() == ResourceType.INTEREST
                                           && n.getResourceId().equals(interestId))));
-      then(notificationMetrics).should().countArticleNotifications(subscriberIds.size());
     }
   }
 }

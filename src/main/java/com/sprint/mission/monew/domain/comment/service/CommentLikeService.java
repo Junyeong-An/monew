@@ -33,7 +33,6 @@ public class CommentLikeService {
   private final CommentRepository commentRepository;
   private final CommentLikeMapper commentLikeMapper;
   private final ApplicationEventPublisher eventPublisher;
-  private final CommentMetrics commentMetrics;
 
   @Transactional
   public CommentLikeResponse create(UUID commentId, UUID userId) {
@@ -63,8 +62,6 @@ public class CommentLikeService {
     log.info("댓글 좋아요 등록 완료 | commentLikeId={}, commentId={}, userId={}",
         savedCommentLike.getId(), commentId, userId);
 
-    commentMetrics.countLiked();
-
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;
     if (authorId != null && !authorId.equals(userId)) {
       String message = "[" + user.getNickname() + "]님이 나의 댓글을 좋아합니다.";
@@ -86,7 +83,6 @@ public class CommentLikeService {
     }
 
     commentRepository.decreaseLikeCount(commentId);
-    commentMetrics.countLikeCanceled();
 
     log.info("댓글 좋아요 취소 완료 | commentId={}, userId={}", commentId, userId);
   }

@@ -62,9 +62,6 @@ public class CommentServiceTest {
   @Mock
   private CommentMapper commentMapper;
 
-  @Mock
-  private CommentMetrics commentMetrics;
-
   private UUID articleId;
   private UUID userId;
   private UUID commentId;
@@ -156,7 +153,6 @@ public class CommentServiceTest {
       verify(userRepository).findById(userId);
       verify(commentRepository).save(any(Comment.class));
       verify(commentMapper).toResponse(any(Comment.class), eq(false));
-      verify(commentMetrics).countCreated();
     }
   }
 
@@ -352,6 +348,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           "cursor",
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           3L
@@ -364,7 +361,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           2
       );
 
@@ -424,6 +421,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           "cursor",
           secondResponse.createdAt(),
+          null,
           false,
           2,
           3L
@@ -436,7 +434,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -495,6 +493,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           secondResponse.createdAt().toString(),
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           3L
@@ -508,7 +507,7 @@ public class CommentServiceTest {
               CommentOrderBy.CREATED_AT,
               SortDirection.DESC,
               null,
-              null,
+              null, null,
               2
           );
 
@@ -565,6 +564,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           "cursor",
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           3L
@@ -577,7 +577,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           2
       );
 
@@ -637,6 +637,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           String.valueOf(secondResponse.likeCount()),
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           3L
@@ -649,7 +650,7 @@ public class CommentServiceTest {
           CommentOrderBy.LIKE_COUNT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           2
       );
 
@@ -709,6 +710,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           "cursor",
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           3L
@@ -721,7 +723,7 @@ public class CommentServiceTest {
           CommentOrderBy.LIKE_COUNT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           2
       );
 
@@ -754,6 +756,7 @@ public class CommentServiceTest {
           List.of(commentResponse),
           "cursor",
           commentResponse.createdAt(),
+          commentResponse.id(),
           true,
           2,
           1L
@@ -766,7 +769,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -799,6 +802,7 @@ public class CommentServiceTest {
           List.of(commentResponse),
           "cursor",
           commentResponse.createdAt(),
+          commentResponse.id(),
           true,
           2,
           1L
@@ -811,7 +815,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -836,7 +840,7 @@ public class CommentServiceTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -865,6 +869,7 @@ public class CommentServiceTest {
           List.of(firstResponse, secondResponse),
           "cursor",
           secondResponse.createdAt(),
+          secondResponse.id(),
           true,
           2,
           2L

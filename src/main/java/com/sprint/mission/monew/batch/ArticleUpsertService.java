@@ -49,7 +49,7 @@ public class ArticleUpsertService {
         toCreate.add(Article.create(source, c.sourceUrl(), c.title(), c.publishDate(), c.summary()));
       } else if (!article.isDeleted()) {
         article.update(c.title(), c.summary());
-        newsCollectMetrics.countDuplicated();
+        newsCollectMetrics.countDuplicated(source);
         log.debug("기사 업데이트 완료 | sourceUrl={}", c.sourceUrl());
       }
     }
@@ -59,7 +59,7 @@ public class ArticleUpsertService {
     }
     List<Article> saved = articleRepository.saveAll(toCreate);
     saved.forEach(a -> {
-      newsCollectMetrics.countCreated();
+      newsCollectMetrics.countCreated(source);
       log.info("기사 저장 완료 | articleId={}, sourceUrl={}", a.getId(), a.getSourceUrl());
     });
   }

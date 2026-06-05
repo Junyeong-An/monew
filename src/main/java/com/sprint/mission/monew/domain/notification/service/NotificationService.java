@@ -55,7 +55,6 @@ public class NotificationService {
             .map(uid -> Notification.create(uid, message, ResourceType.INTEREST, interestId))
             .toList();
     List<Notification> saved = notificationRepository.saveAll(notifications);
-    notificationMetrics.countArticleNotifications(saved.size());
     log.info("기사 등록 알림 생성 완료 | interestId={}, recipientCount={}", interestId, saved.size());
   }
 
@@ -63,11 +62,6 @@ public class NotificationService {
   public void create(UUID recipientId, String message, ResourceType resourceType, UUID resourceId) {
     Notification notification = Notification.create(recipientId, message, resourceType, resourceId);
     Notification saved = notificationRepository.save(notification);
-    if (resourceType == ResourceType.COMMENT) {
-      notificationMetrics.countCommentLikeNotification();
-    } else {
-      notificationMetrics.countArticleNotifications(1);
-    }
     log.info("알림 생성 완료 | notificationId={}, recipientId={}", saved.getId(), recipientId);
   }
 
