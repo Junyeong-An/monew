@@ -104,8 +104,8 @@ class ArticleRestoreServiceTest {
     void DB에_이미_존재하는_기사는_복구하지_않는다() throws IOException {
       // given
       String sourceUrl = "https://news.example.com/exists";
-      given(s3Client.getObject(any(GetObjectRequest.class)))
-          .willReturn(gzipStream(List.of(백업_항목(sourceUrl))));
+      var stream = gzipStream(List.of(백업_항목(sourceUrl)));
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
       given(articleRepository.findBySourceUrlIn(anyList()))
           .willReturn(List.of(기사_생성(sourceUrl)));
 
@@ -122,9 +122,8 @@ class ArticleRestoreServiceTest {
     void DB에_없는_기사는_복구하고_결과를_반환한다() throws IOException {
       // given
       String sourceUrl = "https://news.example.com/lost";
-      ArticleBackupEntry entry = 백업_항목(sourceUrl);
-      given(s3Client.getObject(any(GetObjectRequest.class)))
-          .willReturn(gzipStream(List.of(entry)));
+      var stream = gzipStream(List.of(백업_항목(sourceUrl)));
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
       given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
       given(articleRepository.saveAll(anyList()))
           .willAnswer(inv -> inv.getArgument(0));
@@ -144,8 +143,8 @@ class ArticleRestoreServiceTest {
     void 복구된_기사가_없는_날은_결과에_포함되지_않는다() throws IOException {
       // given — 백업엔 있지만 DB에도 이미 존재
       String sourceUrl = "https://news.example.com/already";
-      given(s3Client.getObject(any(GetObjectRequest.class)))
-          .willReturn(gzipStream(List.of(백업_항목(sourceUrl))));
+      var stream = gzipStream(List.of(백업_항목(sourceUrl)));
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
       given(articleRepository.findBySourceUrlIn(anyList()))
           .willReturn(List.of(기사_생성(sourceUrl)));
 
@@ -162,11 +161,10 @@ class ArticleRestoreServiceTest {
       // given — 이틀치 범위
       Instant twoDaysAgo = LocalDate.now(ZoneOffset.UTC).minusDays(2)
           .atStartOfDay(ZoneOffset.UTC).toInstant();
-      ArticleBackupEntry entry1 = 백업_항목("https://news.example.com/a");
-      ArticleBackupEntry entry2 = 백업_항목("https://news.example.com/b");
+      var stream1 = gzipStream(List.of(백업_항목("https://news.example.com/a")));
+      var stream2 = gzipStream(List.of(백업_항목("https://news.example.com/b")));
       given(s3Client.getObject(any(GetObjectRequest.class)))
-          .willReturn(gzipStream(List.of(entry1)))
-          .willReturn(gzipStream(List.of(entry2)));
+          .willReturn(stream1).willReturn(stream2);
       given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
       given(articleRepository.saveAll(anyList()))
           .willAnswer(inv -> inv.getArgument(0));
