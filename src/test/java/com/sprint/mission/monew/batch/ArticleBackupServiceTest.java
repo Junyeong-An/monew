@@ -115,8 +115,9 @@ class ArticleBackupServiceTest {
     @DisplayName("S3 키 경로가 articles/yyyy/MM/dd/articles-yyyyMMdd.json.gz 형식이다")
     void S3_키_경로가_올바른_형식이다() {
       // given
-      LocalDate yesterday = LocalDate.now().minusDays(1);
-      String expectedKeyPrefix = "articles/" + yesterday.getYear() + "/";
+      LocalDate yesterday = LocalDate.now(ZoneOffset.UTC).minusDays(1);
+      String expectedKey = "articles/" + yesterday.format(BatchGzipUtils.PATH_FORMATTER)
+          + "/articles-" + yesterday.format(BatchGzipUtils.FILE_FORMATTER) + ".json.gz";
 
       given(articleRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedAtIsNull(any(), any()))
           .willReturn(List.of(기사_생성()));
@@ -130,8 +131,7 @@ class ArticleBackupServiceTest {
       ArgumentCaptor<PutObjectRequest> captor =
           ArgumentCaptor.forClass(PutObjectRequest.class);
       verify(s3Client).putObject(captor.capture(), any(RequestBody.class));
-      assertThat(captor.getValue().key()).startsWith(expectedKeyPrefix);
-      assertThat(captor.getValue().key()).endsWith(".json.gz");
+      assertThat(captor.getValue().key()).isEqualTo(expectedKey);
     }
 
     @Test
@@ -204,7 +204,7 @@ class ArticleBackupServiceTest {
     @DisplayName("전날 00:00:00 UTC ~ 오늘 00:00:00 UTC 범위로 기사를 조회한다")
     void 전날_날짜_범위로_기사를_조회한다() {
       // given
-      LocalDate yesterday = LocalDate.now().minusDays(1);
+      LocalDate yesterday = LocalDate.now(ZoneOffset.UTC).minusDays(1);
       Instant expectedFrom = yesterday.atStartOfDay(ZoneOffset.UTC).toInstant();
       Instant expectedTo = yesterday.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
 

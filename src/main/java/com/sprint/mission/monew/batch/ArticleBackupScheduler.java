@@ -16,8 +16,12 @@ public class ArticleBackupScheduler {
 
   @Scheduled(cron = "${scheduler.article-backup.cron:0 0 0 * * *}")
   public void backup() {
-    log.info("기사 S3 백업 배치 시작");
-    articleBackupService.backup();
-    log.info("기사 S3 백업 배치 완료");
+    try {
+      log.info("기사 S3 백업 배치 시작");
+      articleBackupService.backup();
+      log.info("기사 S3 백업 배치 완료");
+    } catch (Exception e) {
+      log.error("기사 S3 백업 배치 실패", e);
+    }
   }
 }
