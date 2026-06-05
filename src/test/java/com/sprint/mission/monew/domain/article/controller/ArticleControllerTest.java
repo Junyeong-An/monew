@@ -17,6 +17,8 @@ import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
+import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
+import com.sprint.mission.monew.domain.article.service.ArticleRestoreService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -33,6 +35,7 @@ class ArticleControllerTest {
 
   @Autowired MockMvc mockMvc;
   @MockitoBean ArticleService articleService;
+  @MockitoBean ArticleRestoreService articleRestoreService;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
@@ -342,6 +345,39 @@ class ArticleControllerTest {
       mockMvc
           .perform(delete(URL + "/{articleId}/hard", articleId))
           .andExpect(status().isNoContent());
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/articles/restore — 유실 기사 복구")
+  class Restore {
+
+    @Test
+    @DisplayName("from, to 파라미터가 없으면 400을 반환한다")
+    void from_to_파라미터가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(get(URL + "/restore"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 200과 복구 결과 목록을 반환한다")
+    void 정상_요청이면_200과_복구_결과_목록을_반환한다() throws Exception {
+      // given
+      Instant from = Instant.parse("2025-06-01T00:00:00Z");
+      Instant to = Instant.parse("2025-06-01T00:00:00Z");
+      ArticleRestoreResultDto result = new ArticleRestoreResultDto(from, List.of(UUID.randomUUID()), 1L);
+      given(articleRestoreService.restore(any(Instant.class), any(Instant.class)))
+          .willReturn(List.of(result));
+
+      // when & then
+      mockMvc
+          .perform(get(URL + "/restore")
+              .param("from", from.toString())
+              .param("to", to.toString()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$[0].restoredArticleCount").value(1));
     }
   }
 }
