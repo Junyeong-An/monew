@@ -35,6 +35,7 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @ExtendWith(MockitoExtension.class)
 class ArticleBackupServiceTest {
@@ -166,6 +167,37 @@ class ArticleBackupServiceTest {
       assertThatThrownBy(() -> articleBackupService.backup())
           .isInstanceOf(ArticleBackupFailedException.class);
       verify(metrics).countFailed();
+    }
+
+    @Test
+    @DisplayName("headObject에서 403 S3Exception 발생 시 ArticleBackupFailedException을 던진다")
+    void headObject에서_403_S3Exception_발생_시_ArticleBackupFailedException을_던진다() {
+      // given
+      given(articleRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedAtIsNull(any(), any()))
+          .willReturn(List.of(기사_생성()));
+      given(s3Client.headObject(any(HeadObjectRequest.class)))
+          .willThrow(S3Exception.builder().statusCode(403).message("Forbidden").build());
+
+      // when & then
+      assertThatThrownBy(() -> articleBackupService.backup())
+          .isInstanceOf(ArticleBackupFailedException.class);
+      verify(metrics).countFailed();
+    }
+
+    @Test
+    @DisplayName("headObject에서 404 S3Exception 발생 시 업로드를 진행한다")
+    void headObject에서_404_S3Exception_발생_시_업로드를_진행한다() {
+      // given
+      given(articleRepository.findByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedAtIsNull(any(), any()))
+          .willReturn(List.of(기사_생성()));
+      given(s3Client.headObject(any(HeadObjectRequest.class)))
+          .willThrow(S3Exception.builder().statusCode(404).message("Not Found").build());
+
+      // when
+      articleBackupService.backup();
+
+      // then
+      verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
     }
 
     @Test
