@@ -6,12 +6,12 @@ import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.exception.ArticleRestoreFailedException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
+import com.sprint.mission.monew.domain.article.util.ArticleBackupKeyUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,9 +31,6 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 @Service
 @RequiredArgsConstructor
 public class ArticleRestoreServiceImpl implements ArticleRestoreService {
-
-  private static final DateTimeFormatter PATH_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
-  private static final DateTimeFormatter FILE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
 
   private final ArticleRepository articleRepository;
   private final S3Client s3Client;
@@ -56,8 +53,7 @@ public class ArticleRestoreServiceImpl implements ArticleRestoreService {
   }
 
   private Optional<ArticleRestoreResultDto> restoreDate(LocalDate date) {
-    String s3Key = "articles/" + date.format(PATH_FORMATTER)
-        + "/articles-" + date.format(FILE_FORMATTER) + ".json.gz";
+    String s3Key = ArticleBackupKeyUtils.s3Key(date);
 
     List<ArticleBackupEntry> entries;
     try {
