@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -245,6 +246,48 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).saveAll(anyList());
+      verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
+    }
+
+    @Test
+    @DisplayName("findBySourceUrlIn이 동일 URL을 중복 반환하면 first-seen 기사를 업데이트한다")
+    void findBySourceUrlIn_중복_결과는_first_seen_엔티티를_업데이트한다() {
+      // given — 같은 URL 두 건 반환 → (a, b) -> a merge function 실행, article1 채택
+      Article article1 = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "제목1", Instant.now(), "요약1");
+      Article article2 = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "제목2", Instant.now(), "요약2");
+      ArticleCandidate candidate = new ArticleCandidate(
+          "https://example.com/1", "새 제목", Instant.now(), "새 요약");
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("기술", "AI")));
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of(article1, article2));
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
+
+      // then — article1(first-seen)만 업데이트, article2는 그대로
+      assertThat(article1.getTitle()).isEqualTo("새 제목");
+      assertThat(article2.getTitle()).isEqualTo("제목2");
+      verify(articleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("saveAll 반환 기사의 URL이 matchedByUrl에 없으면 ArticleInterest 없이 처리한다")
+    void saveAll_반환_URL이_matchedByUrl에_없으면_NPE_없이_처리한다() {
+      // given — saveAll이 matchedByUrl에 없는 URL 기사를 반환 → matched == null 분기 커버
+      Interest interest = 관심사_생성("기술", "AI");
+      ArticleCandidate candidate = new ArticleCandidate(
+          "https://example.com/1", "AI 기사", Instant.now(), "AI 요약");
+      Article unexpectedArticle = Article.create(
+          ArticleSource.NAVER, "https://example.com/999", "다른 기사", Instant.now(), "다른 요약");
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(interest));
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
+      given(articleRepository.saveAll(anyList())).willReturn(List.of(unexpectedArticle));
+      given(articleInterestRepository.saveAll(anyList())).willReturn(List.of());
+
+      // when & then — NPE 없이 정상 처리
+      assertThatCode(() -> articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate)))
+          .doesNotThrowAnyException();
       verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
     }
 
