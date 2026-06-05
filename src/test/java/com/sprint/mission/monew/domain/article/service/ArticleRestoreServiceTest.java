@@ -187,5 +187,34 @@ class ArticleRestoreServiceTest {
       assertThatThrownBy(() -> articleRestoreService.restore(from, to))
           .isInstanceOf(ArticleRestoreFailedException.class);
     }
+
+    @Test
+    @DisplayName("백업 파일이 존재하지만 기사가 없으면 결과에 포함되지 않는다")
+    void 백업_파일이_존재하지만_기사가_없으면_결과에_포함되지_않는다() throws IOException {
+      // given — S3에 빈 배열 [] 가 담긴 파일 존재
+      var stream = gzipStream(List.of());
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+
+      // when
+      List<ArticleRestoreResultDto> result = articleRestoreService.restore(from, to);
+
+      // then
+      assertThat(result).isEmpty();
+      verify(articleRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("from이 to보다 늦으면 빈 결과를 반환한다")
+    void from이_to보다_늦으면_빈_결과를_반환한다() {
+      // given — from > to 이므로 루프 미실행
+      Instant laterFrom = to.plusSeconds(86400);
+
+      // when
+      List<ArticleRestoreResultDto> result = articleRestoreService.restore(laterFrom, to);
+
+      // then
+      assertThat(result).isEmpty();
+      verify(s3Client, never()).getObject(any(GetObjectRequest.class));
+    }
   }
 }
