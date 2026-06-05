@@ -177,6 +177,78 @@ class ArticleUpsertServiceTest {
     }
 
     @Test
+    @DisplayName("null sourceUrl candidates는 필터링하고 DB 조회를 하지 않는다")
+    void null_sourceUrl_candidates는_필터링한다() {
+      // given — null sourceUrl → dedup 필터에서 제거
+      ArticleCandidate nullUrl = new ArticleCandidate(null, "제목", Instant.now(), "요약");
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(nullUrl));
+
+      // then
+      verify(interestRepository, never()).findAllWithKeywords();
+      verify(articleRepository, never()).findBySourceUrlIn(any());
+    }
+
+    @Test
+    @DisplayName("blank sourceUrl candidates는 필터링하고 DB 조회를 하지 않는다")
+    void blank_sourceUrl_candidates는_필터링한다() {
+      // given — blank sourceUrl → dedup 필터에서 제거
+      ArticleCandidate blank = new ArticleCandidate("   ", "제목", Instant.now(), "요약");
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(blank));
+
+      // then
+      verify(interestRepository, never()).findAllWithKeywords();
+      verify(articleRepository, never()).findBySourceUrlIn(any());
+    }
+
+    @Test
+    @DisplayName("title이 null인 candidate는 요약으로만 관심사 매칭한다")
+    void null_title_candidate는_요약으로_매칭한다() {
+      // given — title null → matchInterests의 title != null 분기 false 경로 커버
+      Interest interest = 관심사_생성("기술", "인공지능");
+      ArticleCandidate candidate = new ArticleCandidate(
+          "https://example.com/1", null, Instant.now(), "인공지능 관련 요약");
+      Article saved = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", null, Instant.now(), "인공지능 관련 요약");
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(interest));
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
+      given(articleRepository.saveAll(anyList())).willReturn(List.of(saved));
+      given(articleInterestRepository.saveAll(anyList())).willReturn(List.of());
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
+
+      // then
+      verify(articleRepository).saveAll(anyList());
+      verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
+    }
+
+    @Test
+    @DisplayName("summary가 null인 candidate는 제목으로만 관심사 매칭한다")
+    void null_summary_candidate는_제목으로_매칭한다() {
+      // given — summary null → matchInterests의 summary != null 분기 false 경로 커버
+      Interest interest = 관심사_생성("기술", "인공지능");
+      ArticleCandidate candidate = new ArticleCandidate(
+          "https://example.com/1", "인공지능 기사 제목", Instant.now(), null);
+      Article saved = Article.create(
+          ArticleSource.NAVER, "https://example.com/1", "인공지능 기사 제목", Instant.now(), null);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(interest));
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
+      given(articleRepository.saveAll(anyList())).willReturn(List.of(saved));
+      given(articleInterestRepository.saveAll(anyList())).willReturn(List.of());
+
+      // when
+      articleUpsertService.upsertAll(ArticleSource.NAVER, List.of(candidate));
+
+      // then
+      verify(articleRepository).saveAll(anyList());
+      verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
+    }
+
+    @Test
     @DisplayName("동일 sourceUrl 중복 candidates는 first-seen 하나만 저장한다")
     void 동일_sourceUrl_중복_candidates는_하나만_저장한다() {
       // given
