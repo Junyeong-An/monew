@@ -12,6 +12,9 @@ import org.springframework.data.repository.query.Param;
 public interface InterestRepository
     extends JpaRepository<Interest, UUID>, InterestCustomRepository {
 
+  @Query("SELECT DISTINCT i FROM Interest i JOIN FETCH i.keywords")
+  List<Interest> findAllWithKeywords();
+
   @Query(
       """
       SELECT DISTINCT i FROM Interest i JOIN i.keywords k
