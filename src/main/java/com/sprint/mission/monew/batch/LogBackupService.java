@@ -49,8 +49,7 @@ public class LogBackupService {
       return;
     }
 
-    String s3Key = "logs/" + yesterday.format(BatchGzipUtils.PATH_FORMATTER)
-        + "/app-" + yesterday.format(BatchGzipUtils.FILE_FORMATTER) + ".log.gz";
+    String s3Key = BatchGzipUtils.logS3Key(yesterday);
 
     try {
       s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(s3Key).build());

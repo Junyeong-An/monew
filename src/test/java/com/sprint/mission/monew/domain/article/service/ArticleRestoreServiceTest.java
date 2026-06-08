@@ -16,6 +16,7 @@ import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.exception.ArticleRestoreFailedException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
+import com.sprint.mission.monew.domain.article.service.ArticleRestoreService;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -54,7 +55,7 @@ class ArticleRestoreServiceTest {
 
   @BeforeEach
   void setUp() {
-    articleRestoreService = new ArticleRestoreServiceImpl(articleRepository, s3Client, objectMapper);
+    articleRestoreService = new ArticleRestoreService(articleRepository, s3Client, objectMapper);
     ReflectionTestUtils.setField(articleRestoreService, "bucket", "test-bucket");
     from = LocalDate.now(ZoneOffset.UTC).minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
     to = from;
