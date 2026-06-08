@@ -19,9 +19,13 @@ import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundExceptio
 import com.sprint.mission.monew.domain.article.service.ArticleService;
 import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.service.ArticleRestoreService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,25 +40,38 @@ class ArticleControllerTest {
   @Autowired MockMvc mockMvc;
   @MockitoBean ArticleService articleService;
   @MockitoBean ArticleRestoreService articleRestoreService;
+  @MockitoBean UserSessionRepository userSessionRepository;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
+
+  private UUID userId;
+  private UUID sessionToken;
+
+  @BeforeEach
+  void setUpAuth() {
+    userId = UUID.randomUUID();
+    UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    sessionToken = session.getId();
+    given(userSessionRepository.findById(sessionToken)).willReturn(Optional.of(session));
+  }
 
   @Nested
   @DisplayName("GET /api/articles — 뉴스 기사 목록 조회")
   class Search {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
           .perform(
               get(URL)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
-                  .param("limit", "10"))
-          .andExpect(status().isBadRequest());
+                  .param("limit", "10")
+          )
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -64,9 +81,10 @@ class ArticleControllerTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("direction", "DESC")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -77,9 +95,10 @@ class ArticleControllerTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -90,10 +109,11 @@ class ArticleControllerTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
-                  .param("limit", "0"))
+                  .param("limit", "0")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -104,10 +124,11 @@ class ArticleControllerTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "invalid")
                   .param("direction", "DESC")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -123,10 +144,11 @@ class ArticleControllerTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.hasNext").value(false))
           .andExpect(jsonPath("$.totalElements").value(0));
@@ -142,7 +164,10 @@ class ArticleControllerTest {
     void 모든_출처_목록을_200으로_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(get(URL + "/sources"))
+          .perform(
+              get(URL + "/sources")
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isArray())
           .andExpect(jsonPath("$.length()").value(ArticleSource.values().length))
@@ -155,12 +180,14 @@ class ArticleControllerTest {
   class GetArticle {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(get(URL + "/{articleId}", UUID.randomUUID()))
-          .andExpect(status().isBadRequest());
+          .perform(
+              get(URL + "/{articleId}", UUID.randomUUID())
+          )
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -168,7 +195,10 @@ class ArticleControllerTest {
     void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(get(URL + "/{articleId}", "not-a-uuid").header(USER_ID_HEADER, UUID.randomUUID()))
+          .perform(
+              get(URL + "/{articleId}", "not-a-uuid")
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -182,7 +212,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(get(URL + "/{articleId}", articleId).header(USER_ID_HEADER, UUID.randomUUID()))
+          .perform(
+              get(URL + "/{articleId}", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -191,14 +224,16 @@ class ArticleControllerTest {
     void 정상_요청이면_200과_ArticleResponse를_반환한다() throws Exception {
       // given
       UUID articleId = UUID.randomUUID();
-      UUID userId = UUID.randomUUID();
       ArticleResponse response = new ArticleResponse(articleId, ArticleSource.NAVER,
           "https://example.com", "제목", Instant.now(), "요약", 0, 0, false);
       given(articleService.getArticle(eq(articleId), eq(userId))).willReturn(response);
 
       // when & then
       mockMvc
-          .perform(get(URL + "/{articleId}", articleId).header(USER_ID_HEADER, userId))
+          .perform(
+              get(URL + "/{articleId}", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(articleId.toString()))
           .andExpect(jsonPath("$.title").value("제목"))
@@ -212,12 +247,14 @@ class ArticleControllerTest {
   class RegisterView {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(post(URL + "/{articleId}/article-views", UUID.randomUUID()))
-          .andExpect(status().isBadRequest());
+          .perform(
+              post(URL + "/{articleId}/article-views", UUID.randomUUID())
+          )
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -225,8 +262,10 @@ class ArticleControllerTest {
     void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(post(URL + "/{articleId}/article-views", "not-a-uuid")
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .perform(
+              post(URL + "/{articleId}/article-views", "not-a-uuid")
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -240,8 +279,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(post(URL + "/{articleId}/article-views", articleId)
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .perform(
+              post(URL + "/{articleId}/article-views", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -250,7 +291,6 @@ class ArticleControllerTest {
     void 정상_요청이면_200과_ArticleViewResponse를_반환한다() throws Exception {
       // given
       UUID articleId = UUID.randomUUID();
-      UUID userId = UUID.randomUUID();
       ArticleViewResponse response = new ArticleViewResponse(
           UUID.randomUUID(), userId, Instant.now(),
           articleId, ArticleSource.NAVER, "https://example.com",
@@ -259,8 +299,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(post(URL + "/{articleId}/article-views", articleId)
-              .header(USER_ID_HEADER, userId))
+          .perform(
+              post(URL + "/{articleId}/article-views", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articleId").value(articleId.toString()))
           .andExpect(jsonPath("$.viewedBy").value(userId.toString()))
@@ -277,7 +319,10 @@ class ArticleControllerTest {
     void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}", "not-a-uuid"))
+          .perform(
+              delete(URL + "/{articleId}", "not-a-uuid")
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -291,7 +336,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}", articleId))
+          .perform(
+              delete(URL + "/{articleId}", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -303,7 +351,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}", articleId))
+          .perform(
+              delete(URL + "/{articleId}", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNoContent());
     }
   }
@@ -317,7 +368,10 @@ class ArticleControllerTest {
     void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", "not-a-uuid"))
+          .perform(
+              delete(URL + "/{articleId}/hard", "not-a-uuid")
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -331,7 +385,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .perform(
+              delete(URL + "/{articleId}/hard", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -343,7 +400,10 @@ class ArticleControllerTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .perform(
+              delete(URL + "/{articleId}/hard", articleId)
+                  .header(USER_ID_HEADER, sessionToken)
+          )
           .andExpect(status().isNoContent());
     }
   }
@@ -357,7 +417,8 @@ class ArticleControllerTest {
     void from_to_파라미터가_없으면_400을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(get(URL + "/restore"))
+          .perform(get(URL + "/restore")
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isBadRequest());
     }
 
@@ -374,6 +435,7 @@ class ArticleControllerTest {
       // when & then
       mockMvc
           .perform(get(URL + "/restore")
+              .header(USER_ID_HEADER, sessionToken)
               .param("from", from.toString())
               .param("to", to.toString()))
           .andExpect(status().isOk())

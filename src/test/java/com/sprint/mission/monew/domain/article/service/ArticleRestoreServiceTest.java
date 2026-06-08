@@ -15,8 +15,10 @@ import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.exception.ArticleRestoreFailedException;
+import com.sprint.mission.monew.domain.article.repository.ArticleInterestRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
-import com.sprint.mission.monew.domain.article.service.ArticleRestoreService;
+import com.sprint.mission.monew.domain.interest.entity.Interest;
+import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -47,6 +49,8 @@ class ArticleRestoreServiceTest {
 
   ArticleRestoreService articleRestoreService;
   @Mock ArticleRepository articleRepository;
+  @Mock ArticleInterestRepository articleInterestRepository;
+  @Mock InterestRepository interestRepository;
   @Mock S3Client s3Client;
   @Spy ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
@@ -55,10 +59,15 @@ class ArticleRestoreServiceTest {
 
   @BeforeEach
   void setUp() {
-    articleRestoreService = new ArticleRestoreService(articleRepository, s3Client, objectMapper);
+    articleRestoreService = new ArticleRestoreService(
+        articleRepository, articleInterestRepository, interestRepository, s3Client, objectMapper);
     ReflectionTestUtils.setField(articleRestoreService, "bucket", "test-bucket");
     from = LocalDate.now(ZoneOffset.UTC).minusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant();
     to = from;
+  }
+
+  private Interest 관심사_생성(String keyword) {
+    return Interest.create("테스트 관심사", List.of(keyword));
   }
 
   private Article 기사_생성(String sourceUrl) {
@@ -101,12 +110,47 @@ class ArticleRestoreServiceTest {
     }
 
     @Test
+    @DisplayName("등록된 관심사가 없으면 복구를 건너뛴다")
+    void 등록된_관심사가_없으면_복구를_건너뛴다() throws IOException {
+      // given
+      var stream = gzipStream(List.of(백업_항목("https://news.example.com/lost")));
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of());
+
+      // when
+      List<ArticleRestoreResultDto> result = articleRestoreService.restore(from, to);
+
+      // then
+      assertThat(result).isEmpty();
+      verify(articleRepository, never()).findBySourceUrlIn(anyList());
+      verify(articleRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("관심사 키워드와 매칭되지 않는 기사는 복구하지 않는다")
+    void 관심사_키워드와_매칭되지_않는_기사는_복구하지_않는다() throws IOException {
+      // given
+      var stream = gzipStream(List.of(백업_항목("https://news.example.com/no-match")));
+      given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("AI")));
+      given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
+
+      // when
+      List<ArticleRestoreResultDto> result = articleRestoreService.restore(from, to);
+
+      // then — 기본 백업항목 제목 "제목"이 키워드 "AI"와 불일치
+      assertThat(result).isEmpty();
+      verify(articleRepository, never()).saveAll(anyList());
+    }
+
+    @Test
     @DisplayName("DB에 이미 존재하는 기사는 복구하지 않는다")
     void DB에_이미_존재하는_기사는_복구하지_않는다() throws IOException {
       // given
       String sourceUrl = "https://news.example.com/exists";
       var stream = gzipStream(List.of(백업_항목(sourceUrl)));
       given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("제목")));
       given(articleRepository.findBySourceUrlIn(anyList()))
           .willReturn(List.of(기사_생성(sourceUrl)));
 
@@ -119,15 +163,16 @@ class ArticleRestoreServiceTest {
     }
 
     @Test
-    @DisplayName("DB에 없는 기사는 복구하고 결과를 반환한다")
-    void DB에_없는_기사는_복구하고_결과를_반환한다() throws IOException {
+    @DisplayName("DB에 없고 관심사와 매칭되는 기사는 복구하고 ArticleInterest 매핑을 생성한다")
+    void DB에_없는_기사는_복구하고_ArticleInterest_매핑을_생성한다() throws IOException {
       // given
       String sourceUrl = "https://news.example.com/lost";
       var stream = gzipStream(List.of(백업_항목(sourceUrl)));
       given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("제목")));
       given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
-      given(articleRepository.saveAll(anyList()))
-          .willAnswer(inv -> inv.getArgument(0));
+      given(articleRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+      given(articleInterestRepository.saveAll(anyList())).willReturn(List.of());
 
       // when
       List<ArticleRestoreResultDto> result = articleRestoreService.restore(from, to);
@@ -137,6 +182,7 @@ class ArticleRestoreServiceTest {
       assertThat(result.get(0).restoredArticleCount()).isEqualTo(1);
       assertThat(result.get(0).restoredArticleIds()).hasSize(1);
       verify(articleRepository).saveAll(anyList());
+      verify(articleInterestRepository).saveAll(anyList());
     }
 
     @Test
@@ -146,6 +192,7 @@ class ArticleRestoreServiceTest {
       String sourceUrl = "https://news.example.com/already";
       var stream = gzipStream(List.of(백업_항목(sourceUrl)));
       given(s3Client.getObject(any(GetObjectRequest.class))).willReturn(stream);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("제목")));
       given(articleRepository.findBySourceUrlIn(anyList()))
           .willReturn(List.of(기사_생성(sourceUrl)));
 
@@ -166,9 +213,10 @@ class ArticleRestoreServiceTest {
       var stream2 = gzipStream(List.of(백업_항목("https://news.example.com/b")));
       given(s3Client.getObject(any(GetObjectRequest.class)))
           .willReturn(stream1).willReturn(stream2);
+      given(interestRepository.findAllWithKeywords()).willReturn(List.of(관심사_생성("제목")));
       given(articleRepository.findBySourceUrlIn(anyList())).willReturn(List.of());
-      given(articleRepository.saveAll(anyList()))
-          .willAnswer(inv -> inv.getArgument(0));
+      given(articleRepository.saveAll(anyList())).willAnswer(inv -> inv.getArgument(0));
+      given(articleInterestRepository.saveAll(anyList())).willReturn(List.of());
 
       // when
       List<ArticleRestoreResultDto> result = articleRestoreService.restore(twoDaysAgo, to);
