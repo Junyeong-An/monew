@@ -10,6 +10,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleInterest;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleInterestRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
@@ -17,12 +18,14 @@ import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import java.time.Instant;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +36,12 @@ class ArticleUpsertServiceTest {
   @Mock ArticleInterestRepository articleInterestRepository;
   @Mock InterestRepository interestRepository;
   @Mock NewsCollectMetrics newsCollectMetrics;
+
+  @BeforeEach
+  void setUp() {
+    Mockito.reset(articleRepository, articleInterestRepository, interestRepository,
+        newsCollectMetrics);
+  }
 
   private Interest 관심사_생성(String name, String... keywords) {
     return Interest.create(name, List.of(keywords));
@@ -61,7 +70,8 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).saveAll(anyList());
-      verify(articleInterestRepository).saveAll(anyList());
+      verify(articleInterestRepository).saveAll(argThat(
+          (List<ArticleInterest> list) -> !list.isEmpty()));
       verify(newsCollectMetrics).countCreated(ArticleSource.NAVER);
     }
 
