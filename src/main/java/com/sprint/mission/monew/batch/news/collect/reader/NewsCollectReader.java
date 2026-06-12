@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -27,15 +28,22 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NewsCollectReader implements ItemReader<NewsCollectItem> {
 
-  private static final int NAVER_DAILY_LIMIT = 25_000;
-  private static final int BATCH_FREQUENCY_PER_DAY = 24;
-  private static final int NAVER_MAX_PAGES = 10;
-  private static final long BATCH_LOOKBACK_HOURS = 1;
-
   private final NaverNewsClient naverNewsClient;
   private final RssNewsParser rssNewsParser;
   private final InterestRepository interestRepository;
   private final NewsCollectMetrics newsCollectMetrics;
+
+  @Value("${monew.naver.daily-limit:25000}")
+  private int naverDailyLimit;
+
+  @Value("${monew.naver.batch-frequency-per-day:24}")
+  private int batchFrequencyPerDay;
+
+  @Value("${monew.naver.max-pages:10}")
+  private int naverMaxPages;
+
+  @Value("${monew.naver.lookback-hours:1}")
+  private long lookbackHours;
 
   private Iterator<NewsCollectItem> iterator;
 
@@ -62,9 +70,9 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
     }
 
     int maxPages = Math.min(
-        NAVER_DAILY_LIMIT / BATCH_FREQUENCY_PER_DAY / keywords.size(),
-        NAVER_MAX_PAGES);
-    Instant cutoff = Instant.now().minus(BATCH_LOOKBACK_HOURS, ChronoUnit.HOURS);
+        naverDailyLimit / batchFrequencyPerDay / keywords.size(),
+        naverMaxPages);
+    Instant cutoff = Instant.now().minus(lookbackHours, ChronoUnit.HOURS);
 
     log.info("Naver 수집 시작 | keywordCount={}, maxPagesPerKeyword={}", keywords.size(), maxPages);
 
