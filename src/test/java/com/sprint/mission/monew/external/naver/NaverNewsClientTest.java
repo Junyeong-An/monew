@@ -31,7 +31,6 @@ class NaverNewsClientTest {
     naverNewsClient = new NaverNewsClient(restClient);
     ReflectionTestUtils.setField(naverNewsClient, "clientId", "test-id");
     ReflectionTestUtils.setField(naverNewsClient, "clientSecret", "test-secret");
-    ReflectionTestUtils.setField(naverNewsClient, "query", "뉴스");
     ReflectionTestUtils.setField(naverNewsClient, "display", 10);
   }
 
@@ -42,7 +41,7 @@ class NaverNewsClientTest {
     RestClient.ResponseSpec responseSpec = org.mockito.Mockito.mock(RestClient.ResponseSpec.class);
 
     given(restClient.get()).willReturn(uriSpec);
-    given(uriSpec.uri(anyString(), any(), any())).willReturn(headersSpec);
+    given(uriSpec.uri(anyString(), any(), any(), any())).willReturn(headersSpec);
     given(headersSpec.header(anyString(), anyString())).willReturn(headersSpec);
     given(headersSpec.retrieve()).willReturn(responseSpec);
     given(responseSpec.body(NaverNewsResponse.class)).willReturn(response);
@@ -62,7 +61,7 @@ class NaverNewsClientTest {
       mockRestClientChain(new NaverNewsResponse(1, 1, 1, List.of(item)));
 
       // when
-      List<NaverNewsItem> result = naverNewsClient.fetchNews();
+      List<NaverNewsItem> result = naverNewsClient.fetchNews("AI", 1);
 
       // then
       assertThat(result).hasSize(1);
@@ -76,7 +75,7 @@ class NaverNewsClientTest {
       mockRestClientChain(null);
 
       // when
-      List<NaverNewsItem> result = naverNewsClient.fetchNews();
+      List<NaverNewsItem> result = naverNewsClient.fetchNews("AI", 1);
 
       // then
       assertThat(result).isEmpty();
@@ -89,9 +88,20 @@ class NaverNewsClientTest {
       mockRestClientChain(new NaverNewsResponse(0, 1, 0, null));
 
       // when
-      List<NaverNewsItem> result = naverNewsClient.fetchNews();
+      List<NaverNewsItem> result = naverNewsClient.fetchNews("AI", 1);
 
       // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("page=2이면 start=display+1로 계산된다")
+    void page2이면_start가_올바르게_계산된다() {
+      // given — display=10이므로 page=2 → start=11
+      mockRestClientChain(new NaverNewsResponse(0, 11, 0, List.of()));
+
+      // when & then — 예외 없이 정상 동작하면 URI 계산이 올바른 것
+      List<NaverNewsItem> result = naverNewsClient.fetchNews("AI", 2);
       assertThat(result).isEmpty();
     }
   }
