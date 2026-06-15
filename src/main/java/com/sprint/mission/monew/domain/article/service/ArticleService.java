@@ -66,13 +66,14 @@ public class ArticleService {
         .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
 
-    return articleViewRepository.findByArticleIdAndUserId(articleId, userId)
-        .map(view -> articleViewMapper.toResponse(view, view.getArticle().getViewCount()))
-        .orElseGet(() -> {
-          ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
-          articleRepository.increaseViewCount(articleId);
-          log.info("기사 조회 등록 완료 | articleId={}, userId={}", articleId, userId);
-          return articleViewMapper.toResponse(saved, article.getViewCount() + 1);
-        });
+    int inserted = articleViewRepository.insertIfAbsent(userId, articleId);
+    if (inserted == 1) {
+      articleRepository.increaseViewCount(articleId);
+      log.info("기사 조회 등록 완료 | articleId={}, userId={}", articleId, userId);
+    }
+    ArticleView view = articleViewRepository.findByArticleIdAndUserId(articleId, userId)
+        .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
+    int currentViewCount = articleRepository.findViewCountById(articleId);
+    return articleViewMapper.toResponse(view, currentViewCount);
   }
 }

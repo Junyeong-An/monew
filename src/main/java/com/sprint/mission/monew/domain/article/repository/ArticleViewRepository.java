@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -26,6 +27,14 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
   )
   List<ArticleView> findTop10ByUserIdAndArticleNotDeleted(
       @Param("userId") UUID userId, Pageable pageable);
+
+  @Modifying
+  @Query(value = """
+      INSERT INTO article_views (id, user_id, article_id, created_at)
+      VALUES (gen_random_uuid(), :userId, :articleId, now())
+      ON CONFLICT (user_id, article_id) DO NOTHING
+      """, nativeQuery = true)
+  int insertIfAbsent(@Param("userId") UUID userId, @Param("articleId") UUID articleId);
 
   boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 
