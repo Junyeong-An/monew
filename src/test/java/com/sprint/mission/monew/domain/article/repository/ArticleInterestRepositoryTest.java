@@ -9,6 +9,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleInterest;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
+import com.sprint.mission.monew.domain.interest.util.JamoNormalizer;
 import com.sprint.mission.monew.domain.article.repository.dto.InterestArticleCount;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -56,8 +57,8 @@ class ArticleInterestRepositoryTest {
       // given
       Instant since = Instant.now().minusSeconds(5);
 
-      Interest interestA = interestRepository.save(Interest.create("인공지능", List.of("AI")));
-      Interest interestB = interestRepository.save(Interest.create("경제", List.of("경제")));
+      Interest interestA = interestRepository.save(Interest.create("인공지능", JamoNormalizer.normalize("인공지능").length(), List.of("AI")));
+      Interest interestB = interestRepository.save(Interest.create("경제", JamoNormalizer.normalize("경제").length(), List.of("경제")));
 
       Article a1 = articleRepository.save(
           Article.create(ArticleSource.NAVER, "https://ex.com/1", "AI 기사1", Instant.now(), "요약1"));
@@ -98,7 +99,7 @@ class ArticleInterestRepositoryTest {
       // given — since를 미래로 설정해 저장된 기사가 범위 밖이 되도록
       Instant since = Instant.now().plusSeconds(60);
 
-      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("인공지능", JamoNormalizer.normalize("인공지능").length(), List.of("AI")));
       Article a1 = articleRepository.save(
           Article.create(ArticleSource.NAVER, "https://ex.com/1", "AI 기사", Instant.now(), "요약"));
       articleInterestRepository.save(ArticleInterest.create(a1, interest));
@@ -117,7 +118,7 @@ class ArticleInterestRepositoryTest {
     @DisplayName("createdAt이 since와 같은 기사는 집계에서 제외한다")
     void createdAt이_since와_같은_기사는_집계에서_제외한다() {
       // given
-      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("인공지능", JamoNormalizer.normalize("인공지능").length(), List.of("AI")));
       Article article = articleRepository.save(
           Article.create(ArticleSource.NAVER, "https://ex.com/boundary", "AI 기사", Instant.now(), "요약"));
       articleInterestRepository.save(ArticleInterest.create(article, interest));
@@ -140,7 +141,7 @@ class ArticleInterestRepositoryTest {
       // given
       Instant since = Instant.now().minusSeconds(5);
 
-      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("인공지능", JamoNormalizer.normalize("인공지능").length(), List.of("AI")));
       Article deleted = articleRepository.save(
           Article.create(ArticleSource.NAVER, "https://ex.com/1", "AI 기사", Instant.now(), "요약"));
       deleted.softDelete();

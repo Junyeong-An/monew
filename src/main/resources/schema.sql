@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS interests
 (
     id               UUID                     NOT NULL,
     name             VARCHAR(50)              NOT NULL,
+    jamo_length      INT                      NOT NULL,
     subscriber_count BIGINT                   NOT NULL DEFAULT 0,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at       TIMESTAMP WITH TIME ZONE,
