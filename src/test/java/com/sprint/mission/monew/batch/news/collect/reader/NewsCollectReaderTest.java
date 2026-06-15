@@ -20,6 +20,7 @@ import com.sprint.mission.monew.external.rss.RssNewsParser;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
 import java.time.Instant;
 import java.util.List;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class NewsCollectReaderTest {
@@ -185,6 +187,74 @@ public class NewsCollectReaderTest {
 
       // then
       assertThat(result).isNull();
+    }
+  }
+
+  @Nested
+  @DisplayName("딜레이")
+  class Delay {
+
+    @BeforeEach
+    void setUpDelayFields() {
+      ReflectionTestUtils.setField(reader, "requestDelayMs", 0L);
+      ReflectionTestUtils.setField(reader, "naverDailyLimit", 1000);
+      ReflectionTestUtils.setField(reader, "batchFrequencyPerDay", 1);
+      ReflectionTestUtils.setField(reader, "naverMaxPages", 3);
+      ReflectionTestUtils.setField(reader, "lookbackHours", 876000L);
+    }
+
+    @Test
+    @DisplayName("키워드가 2개 이상이면 두 번째 키워드부터 딜레이 후 호출한다")
+    void 키워드_2개_이상이면_두번째_키워드부터_딜레이_후_호출한다() {
+      // given
+      given(interestRepository.findAllWithKeywords())
+          .willReturn(List.of(interestWithKeyword("AI"), interestWithKeyword("경제")));
+      given(naverNewsClient.fetchNews(anyString(), anyInt()))
+          .willReturn(List.of(oldNaverItem()));
+
+      // when
+      reader.read();
+
+      // then — 두 키워드 모두 호출됨
+      verify(naverNewsClient).fetchNews("AI", 1);
+      verify(naverNewsClient).fetchNews("경제", 1);
+    }
+
+    @Test
+    @DisplayName("페이지가 2 이상이면 딜레이 후 다음 페이지를 호출한다")
+    void 페이지_2_이상이면_딜레이_후_다음_페이지_호출한다() {
+      // given — page 1은 최신 기사(cutoff 이후), page 2는 오래된 기사로 종료
+      given(interestRepository.findAllWithKeywords())
+          .willReturn(List.of(interestWithKeyword("AI")));
+      given(naverNewsClient.fetchNews(eq("AI"), eq(1)))
+          .willReturn(List.of(recentNaverItem()));
+      given(naverNewsClient.fetchNews(eq("AI"), eq(2)))
+          .willReturn(List.of(oldNaverItem()));
+
+      // when
+      reader.read();
+
+      // then — page 2까지 호출됨
+      verify(naverNewsClient).fetchNews("AI", 1);
+      verify(naverNewsClient).fetchNews("AI", 2);
+    }
+
+    @Test
+    @DisplayName("딜레이 중 인터럽트 발생 시 예외 없이 처리하고 인터럽트 상태를 복원한다")
+    void 딜레이_중_인터럽트_발생_시_예외_없이_처리한다() {
+      // given — 2개 키워드로 두 번째 키워드 전 sleep 유발
+      given(interestRepository.findAllWithKeywords())
+          .willReturn(List.of(interestWithKeyword("AI"), interestWithKeyword("경제")));
+      given(naverNewsClient.fetchNews(anyString(), anyInt()))
+          .willReturn(List.of(oldNaverItem()));
+      Thread.currentThread().interrupt();
+
+      // when — 예외 없이 완료되어야 함
+      Assertions.assertThatNoException().isThrownBy(() -> reader.read());
+
+      // then — catch 블록에서 인터럽트 상태 복원 확인 후 초기화
+      assertThat(Thread.currentThread().isInterrupted()).isTrue();
+      Thread.interrupted();
     }
   }
 
