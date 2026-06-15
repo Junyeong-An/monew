@@ -45,7 +45,7 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
   @Value("${monew.naver.lookback-hours}")
   private long lookbackHours;
 
-  @Value("${monew.naver.request-delay-ms:100}")
+  @Value("${monew.naver.request-delay-ms}")
   private long requestDelayMs;
 
   private Iterator<NewsCollectItem> iterator;
