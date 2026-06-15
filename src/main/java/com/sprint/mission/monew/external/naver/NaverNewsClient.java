@@ -29,13 +29,13 @@ public class NaverNewsClient {
 
   private final RestClient restClient;
 
-  @Value("${monew.naver.client-id:}")
+  @Value("${monew.naver.client-id}")
   private String clientId;
 
-  @Value("${monew.naver.client-secret:}")
+  @Value("${monew.naver.client-secret}")
   private String clientSecret;
 
-  @Value("${monew.naver.display:100}")
+  @Value("${monew.naver.display}")
   private int display;
 
   public List<NaverNewsItem> fetchNews(String keyword, int page) {

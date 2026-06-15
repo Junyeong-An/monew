@@ -33,16 +33,16 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
   private final InterestRepository interestRepository;
   private final NewsCollectMetrics newsCollectMetrics;
 
-  @Value("${monew.naver.daily-limit:25000}")
+  @Value("${monew.naver.daily-limit}")
   private int naverDailyLimit;
 
-  @Value("${monew.naver.batch-frequency-per-day:24}")
+  @Value("${monew.naver.batch-frequency-per-day}")
   private int batchFrequencyPerDay;
 
-  @Value("${monew.naver.max-pages:10}")
+  @Value("${monew.naver.max-pages}")
   private int naverMaxPages;
 
-  @Value("${monew.naver.lookback-hours:1}")
+  @Value("${monew.naver.lookback-hours}")
   private long lookbackHours;
 
   private Iterator<NewsCollectItem> iterator;
