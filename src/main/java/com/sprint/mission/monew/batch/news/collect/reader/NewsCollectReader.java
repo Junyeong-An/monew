@@ -45,6 +45,9 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
   @Value("${monew.naver.lookback-hours}")
   private long lookbackHours;
 
+  @Value("${monew.naver.request-delay-ms:100}")
+  private long requestDelayMs;
+
   private Iterator<NewsCollectItem> iterator;
 
   @Override
@@ -78,8 +81,11 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
     log.info("Naver 수집 시작 | keywordCount={}, maxPagesPerKeyword={}", keywords.size(), maxPages);
 
     List<NewsCollectItem> result = new ArrayList<>();
-    for (String keyword : keywords) {
-      result.addAll(collectNaverByKeyword(keyword, maxPages, cutoff));
+    for (int i = 0; i < keywords.size(); i++) {
+      if (i > 0) {
+        sleep(requestDelayMs);
+      }
+      result.addAll(collectNaverByKeyword(keywords.get(i), maxPages, cutoff));
     }
 
     newsCollectMetrics.countCollected(ArticleSource.NAVER, result.size());
@@ -98,6 +104,9 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
   private List<NewsCollectItem> collectNaverByKeyword(String keyword, int maxPages, Instant cutoff) {
     List<NewsCollectItem> result = new ArrayList<>();
     for (int page = 1; page <= maxPages; page++) {
+      if (page > 1) {
+        sleep(requestDelayMs);
+      }
       try {
         List<NaverNewsItem> items = naverNewsClient.fetchNews(keyword, page);
         if (items.isEmpty()) {
@@ -145,6 +154,15 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
         publishDate.get(),
         NaverNewsClient.stripHtml(item.description())
     ));
+  }
+
+  private void sleep(long ms) {
+    try {
+      Thread.sleep(ms);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      log.warn("Naver API 딜레이 중 인터럽트 발생");
+    }
   }
 
   private Stream<NewsCollectItem> collectRss(ArticleSource source) {
