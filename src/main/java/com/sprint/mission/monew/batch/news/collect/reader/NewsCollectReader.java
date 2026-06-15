@@ -69,9 +69,10 @@ public class NewsCollectReader implements ItemReader<NewsCollectItem> {
       return Stream.empty();
     }
 
-    int maxPages = Math.min(
-        naverDailyLimit / batchFrequencyPerDay / keywords.size(),
-        naverMaxPages);
+    int quota = batchFrequencyPerDay > 0
+        ? naverDailyLimit / batchFrequencyPerDay / keywords.size()
+        : naverDailyLimit / keywords.size();
+    int maxPages = Math.max(Math.min(quota, naverMaxPages), 1);
     Instant cutoff = Instant.now().minus(lookbackHours, ChronoUnit.HOURS);
 
     log.info("Naver 수집 시작 | keywordCount={}, maxPagesPerKeyword={}", keywords.size(), maxPages);

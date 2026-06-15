@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.batch.news.collect.metrics.NewsCollectMetrics;
@@ -54,7 +55,7 @@ public class NewsCollectReaderTest {
   }
 
   private Interest interestWithKeyword(String keyword) {
-    return Interest.create(keyword, List.of(keyword));
+    return Interest.create(keyword, 0, List.of(keyword));
   }
 
   @BeforeEach
@@ -108,8 +109,9 @@ public class NewsCollectReaderTest {
       // when
       reader.read();
 
-      // then — page=1 이후 요청 없음
+      // then — page=1 한 번만 호출되고 page=2는 호출되지 않음
       verify(naverNewsClient).fetchNews("AI", 1);
+      verify(naverNewsClient, never()).fetchNews("AI", 2);
     }
 
     @Test

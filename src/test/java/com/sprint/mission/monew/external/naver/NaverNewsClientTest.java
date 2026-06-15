@@ -3,7 +3,9 @@ package com.sprint.mission.monew.external.naver;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsResponse;
@@ -35,7 +37,7 @@ class NaverNewsClientTest {
   }
 
   @SuppressWarnings("unchecked")
-  private void mockRestClientChain(NaverNewsResponse response) {
+  private RestClient.RequestHeadersUriSpec mockRestClientChain(NaverNewsResponse response) {
     RestClient.RequestHeadersUriSpec uriSpec = org.mockito.Mockito.mock(RestClient.RequestHeadersUriSpec.class);
     RestClient.RequestHeadersSpec headersSpec = org.mockito.Mockito.mock(RestClient.RequestHeadersSpec.class);
     RestClient.ResponseSpec responseSpec = org.mockito.Mockito.mock(RestClient.ResponseSpec.class);
@@ -45,6 +47,7 @@ class NaverNewsClientTest {
     given(headersSpec.header(anyString(), anyString())).willReturn(headersSpec);
     given(headersSpec.retrieve()).willReturn(responseSpec);
     given(responseSpec.body(NaverNewsResponse.class)).willReturn(response);
+    return uriSpec;
   }
 
   @Nested
@@ -98,11 +101,15 @@ class NaverNewsClientTest {
     @DisplayName("page=2이면 start=display+1로 계산된다")
     void page2이면_start가_올바르게_계산된다() {
       // given — display=10이므로 page=2 → start=11
-      mockRestClientChain(new NaverNewsResponse(0, 11, 0, List.of()));
+      RestClient.RequestHeadersUriSpec uriSpec =
+          mockRestClientChain(new NaverNewsResponse(0, 11, 0, List.of()));
 
-      // when & then — 예외 없이 정상 동작하면 URI 계산이 올바른 것
+      // when
       List<NaverNewsItem> result = naverNewsClient.fetchNews("AI", 2);
+
+      // then — URI가 start=11로 호출됐는지 검증
       assertThat(result).isEmpty();
+      verify(uriSpec).uri(anyString(), eq("AI"), eq(10), eq(11));
     }
   }
 
